@@ -1016,6 +1016,7 @@ Nunca CDN. A versão do MiniSearch está no
 | 19 | `feat/writing-details` | texto de marcador opcional, âncoras compatíveis com a forja e números na contagem de palavras |
 | — | `chore/release-0.2.0` | marco 0.2.0 no CHANGELOG |
 | 20 | `feat/task-link-dialog` | vínculo para tarefa ou tutorial abre em diálogo, com o botão `open_full_page`; sai na v0.3.0 |
+| — | `chore/release-0.3.0` | marco 0.3.0 no CHANGELOG |
 
 A partir da fase 4, toda fase que muda comportamento atualiza também a
 página correspondente dos guias do guidebook (seção 13), no mesmo
@@ -1243,7 +1244,7 @@ Exemplo de serviço no compose do projeto:
 ```yaml
 services:
   guidebook:
-    image: ghcr.io/bpbastos/guidebook:v0.2.0
+    image: ghcr.io/bpbastos/guidebook:v0.3.0
     read_only: true
     tmpfs:
       - /tmp

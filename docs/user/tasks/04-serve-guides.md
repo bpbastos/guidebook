@@ -27,7 +27,7 @@ o proxy do projeto.
 ```yaml
 services:
   guidebook:
-    image: ghcr.io/bpbastos/guidebook:v0.2.0
+    image: ghcr.io/bpbastos/guidebook:v0.3.0
     read_only: true
     tmpfs:
       - /tmp
