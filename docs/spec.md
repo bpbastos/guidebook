@@ -1020,8 +1020,8 @@ próprios guias é um teste da ferramenta.
   - integrar ao e2e de um projeto, com os formatos das seções 6 e 7;
   - integrar à CI de um projeto. O e2e gera as mídias fora do git, e
     o `check` e o `build` rodam no mesmo job, depois dele. Os guias
-    viram artefato da pipeline, com `-product-version` e `-date` a
-    partir da fase 18;
+    viram artefato da pipeline, com `-product-version` e `-date` vindos
+    da tag ou do SHA e da data do commit;
   - interpretar as recusas das regras de escrita.
 
   É uma CLI: sem capturas nem vídeos aqui. Esses recursos continuam testados

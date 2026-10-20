@@ -32,6 +32,11 @@ type Config struct {
 	// NoMedia é o modo do "check -no-media": nenhum arquivo de mídia é
 	// lido nem exigido (docs/spec.md, seção 2.2).
 	NoMedia bool `yaml:"-"`
+
+	// ProductVersion e Date vêm de -product-version e -date (docs/spec.md,
+	// seção 2.3); Date em AAAA-MM-DD. Vazios, o rodapé não aparece.
+	ProductVersion string `yaml:"-"`
+	Date           string `yaml:"-"`
 }
 
 type Product struct {
@@ -63,6 +68,12 @@ type User struct {
 	Profiles      []Profile `yaml:"profiles"`
 	Videos        Videos    `yaml:"videos"`
 	MaxSizeMiB    *int      `yaml:"max_size_mib"`
+	WhatsNew      *bool     `yaml:"whats_new"`
+}
+
+// ShowWhatsNew diz se o guia tem "O que há de novo"; o padrão é ter.
+func (u *User) ShowWhatsNew() bool {
+	return u.WhatsNew == nil || *u.WhatsNew
 }
 
 type Profile struct {
@@ -294,12 +305,16 @@ var uiDefaults = map[string]string{
 	"screen_points":       "Pontos desta tela",
 	"user_guide":          "Guia do usuário",
 	"developer_guide":     "Guia do desenvolvedor",
+	"product_version":     "Versão {version}",
+	"generated_on":        "Gerado em {date}",
 }
 
 // uiPlaceholders são os marcadores obrigatórios de cada texto.
 var uiPlaceholders = map[string][]string{
-	"slide_of":    {"{n}", "{total}"},
-	"watch_video": {"{min}"},
+	"slide_of":        {"{n}", "{total}"},
+	"watch_video":     {"{min}"},
+	"product_version": {"{version}"},
+	"generated_on":    {"{date}"},
 }
 
 var (

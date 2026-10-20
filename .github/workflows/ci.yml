@@ -47,8 +47,12 @@ jobs:
 
       # Os guias do próprio guidebook viram artefato da execução, como a
       # tarefa "Integrar à CI" do guia do usuário ensina.
+      # Versão pelo SHA curto e data do commit, nunca do relógio.
       - name: build dos guias do guidebook
-        run: go run ./cmd/guidebook build -out out/guidebook
+        run: |
+          go run ./cmd/guidebook build -out out/guidebook \
+            -product-version "$(git rev-parse --short HEAD)" \
+            -date "$(git log -1 --format=%cs)"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

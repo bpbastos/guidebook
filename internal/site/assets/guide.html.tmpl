@@ -45,6 +45,9 @@
 {{- end}}
 </article>
 {{- end}}
+{{- if .Footer}}
+<footer class="gb-footer">{{range $i, $p := .Footer}}{{if $i}} · {{end}}{{$p}}{{end}}</footer>
+{{- end}}
 </main>
 </div>
 {{- if .User}}

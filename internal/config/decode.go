@@ -92,6 +92,13 @@ func (d *decoder) decode(n *yaml.Node, v reflect.Value, path string) {
 		}
 		v.SetInt(int64(i))
 
+	case reflect.Bool:
+		if n.Kind != yaml.ScalarNode || n.Tag != "!!bool" {
+			d.report(path, "esperava um booleano (true ou false)")
+			return
+		}
+		v.SetBool(strings.EqualFold(n.Value, "true"))
+
 	default:
 		panic("config: tipo sem decodificação: " + v.Type().String())
 	}

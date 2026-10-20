@@ -45,11 +45,17 @@ guides:
     - name: e2e
       run: make e2e
 
+    # Versão: a tag, ou o SHA curto fora de tag. Data: a do commit.
+    - name: versão e data
+      run: |
+        echo "GUIDE_VERSION=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+        echo "GUIDE_DATE=$(git log -1 --format=%cs)" >> "$GITHUB_ENV"
+
     - name: check
-      run: guidebook check
+      run: guidebook check -product-version "$GUIDE_VERSION" -date "$GUIDE_DATE"
 
     - name: build
-      run: guidebook build -out out/guides
+      run: guidebook build -out out/guides -product-version "$GUIDE_VERSION" -date "$GUIDE_DATE"
 
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
@@ -58,7 +64,10 @@ guides:
         if-no-files-found: error
 ```
 
-Troque `make e2e` pelo comando do e2e do projeto. Em outra forja, os
+Troque `make e2e` pelo comando do e2e do projeto. A versão e a data
+aparecem no rodapé dos dois guias. A data vem do commit, não do relógio
+da máquina: o mesmo commit gera os mesmos guias. O `check` recebe as
+mesmas opções para informar o mesmo tamanho do `build`. Em outra forja, os
 passos são os mesmos: instalar, rodar o e2e, `check`, `build` e guardar
 `out/guides` como artefato.
 

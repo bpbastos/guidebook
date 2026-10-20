@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bpbastos/guidebook/internal/build"
 	"github.com/bpbastos/guidebook/internal/serve"
@@ -81,6 +82,8 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(io.Discard)
 	configPath := fs.String("config", "guidebook.yaml", "")
 	guide := fs.String("guide", "all", "")
+	productVersion := fs.String("product-version", "", "")
+	date := fs.String("date", "", "")
 	var out *string
 	noMedia := new(bool)
 	if cmd == "build" {
@@ -101,8 +104,18 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 	if *guide != "all" && *guide != "user" && *guide != "developer" {
 		return usageError(stderr, "-guide aceita all, user ou developer (veio %q)", *guide)
 	}
+	set := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) { set[f.Name] = true })
+	if v := *productVersion; set["product-version"] && (strings.TrimSpace(v) == "" || strings.ContainsAny(v, "\r\n") || utf8.RuneCountInString(v) > maxProductVersion) {
+		return usageError(stderr, "-product-version aceita um texto de 1 a %d caracteres, sem quebra de linha", maxProductVersion)
+	}
+	if d := *date; set["date"] {
+		if t, err := time.Parse(time.DateOnly, d); err != nil || t.Format(time.DateOnly) != d {
+			return usageError(stderr, "-date aceita uma data válida no formato AAAA-MM-DD (veio %q)", d)
+		}
+	}
 
-	o := build.Options{Config: *configPath, Guide: *guide, NoMedia: *noMedia}
+	o := build.Options{Config: *configPath, Guide: *guide, NoMedia: *noMedia, ProductVersion: *productVersion, Date: *date}
 	if out != nil {
 		o.Out = *out
 	}
@@ -140,6 +153,10 @@ func guideName(guide string) string {
 	}
 	return "do usuário"
 }
+
+// maxProductVersion é o tamanho máximo de -product-version, em
+// caracteres (docs/spec.md, seção 2.3).
+const maxProductVersion = 40
 
 // minInterval é o menor intervalo de conferência do serve.
 const minInterval = 500 * time.Millisecond

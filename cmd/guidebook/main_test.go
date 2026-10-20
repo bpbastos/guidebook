@@ -511,3 +511,97 @@ func TestMediaWarnings(t *testing.T) {
 		t.Errorf("-no-media não lê mídia e não avisa:\n%s", stderr)
 	}
 }
+
+// TestWhatsNewOff: com user.whats_new: false, o CHANGELOG não é lido nem
+// conferido, e o artigo não existe (docs/spec.md, seção 3.6).
+func TestWhatsNewOff(t *testing.T) {
+	files := map[string]string{
+		"guidebook.yaml":       "version: 1\nproduct:\n  name: P\nuser:\n  dir: docs/user\n",
+		"docs/user/tasks/a.md": "# A\n",
+		"CHANGELOG.md":         "# Changelog\n\n## [1.0.0]\n\n### Inventado\n\n- x\n",
+	}
+	if code, _, _ := runCLI("check", "-config", project(t, files)); code != 1 {
+		t.Fatalf("CHANGELOG fora do formato deveria ser recusado; código %d", code)
+	}
+	files["guidebook.yaml"] = "version: 1\nproduct:\n  name: P\nuser:\n  dir: docs/user\n  whats_new: false\n"
+	p := project(t, files)
+	out := filepath.Join(t.TempDir(), "out")
+	if code, _, stderr := runCLI("build", "-config", p, "-out", out); code != 0 {
+		t.Fatalf("código %d\n%s", code, stderr)
+	}
+	html, _ := os.ReadFile(filepath.Join(out, "user-guide.html"))
+	if strings.Contains(string(html), "whats-new") || strings.Contains(string(html), "O que há de novo") {
+		t.Error("com whats_new: false, não há \"O que há de novo\"")
+	}
+}
+
+// TestVersionAndDate: -product-version e -date aparecem no rodapé dos
+// dois guias, com escape; sem elas, não há rodapé (docs/spec.md, seção
+// 2.3).
+func TestVersionAndDate(t *testing.T) {
+	read := func(out, name string) string {
+		b, err := os.ReadFile(filepath.Join(out, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	opts := []string{"-product-version", `1.2 <script>"x"`, "-date", "2026-10-20"}
+	a, b := filepath.Join(t.TempDir(), "a"), filepath.Join(t.TempDir(), "b")
+	for _, out := range []string{a, b} {
+		if code, _, stderr := runCLI(append([]string{"build", "-config", example, "-out", out}, opts...)...); code != 0 {
+			t.Fatalf("código %d\n%s", code, stderr)
+		}
+	}
+	for _, guide := range []string{"user-guide.html", "developer-guide.html"} {
+		html := read(a, guide)
+		for _, want := range []string{"Versão 1.2 &lt;script&gt;&#34;x&#34;", "Gerado em 20/10/2026"} {
+			if !strings.Contains(html, want) {
+				t.Errorf("%s sem %q", guide, want)
+			}
+		}
+		if strings.Contains(html, "<script>\"x\"") {
+			t.Errorf("%s com a versão sem escape", guide)
+		}
+		if html != read(b, guide) {
+			t.Errorf("%s mudou entre dois builds com as mesmas opções", guide)
+		}
+	}
+
+	plain := filepath.Join(t.TempDir(), "plain")
+	runCLI("build", "-config", example, "-out", plain)
+	for _, guide := range []string{"user-guide.html", "developer-guide.html"} {
+		if html := read(plain, guide); strings.Contains(html, "gb-footer") || strings.Contains(html, "Versão") || strings.Contains(html, "Gerado em") {
+			t.Errorf("%s sem opções não deveria ter rodapé", guide)
+		}
+	}
+
+	// O check aceita as mesmas opções, e o tamanho bate com o do build.
+	_, built, _ := runCLI(append([]string{"build", "-config", example, "-out", filepath.Join(t.TempDir(), "c")}, opts...)...)
+	_, checked, _ := runCLI(append([]string{"check", "-config", example}, opts...)...)
+	if s, c := sizes(t, built), sizes(t, checked); len(s) != 2 || s["do usuário"] != c["do usuário"] || s["do desenvolvedor"] != c["do desenvolvedor"] {
+		t.Errorf("tamanhos diferentes: build %v, check %v", s, c)
+	}
+}
+
+func TestVersionAndDateUsage(t *testing.T) {
+	for _, tt := range []struct {
+		args []string
+		msg  string
+	}{
+		{[]string{"-date", "2026-02-30"}, "-date"},
+		{[]string{"-date", "20/10/2026"}, "-date"},
+		{[]string{"-date", "2026-1-5"}, "-date"},
+		{[]string{"-product-version", ""}, "-product-version"},
+		{[]string{"-product-version", "a\nb"}, "-product-version"},
+		{[]string{"-product-version", strings.Repeat("x", 41)}, "-product-version"},
+	} {
+		code, _, stderr := runCLI(append([]string{"check", "-config", example}, tt.args...)...)
+		if code != 2 || !strings.Contains(stderr, tt.msg) {
+			t.Errorf("%q: código %d\n%s", tt.args, code, stderr)
+		}
+	}
+	if code, _, stderr := runCLI("check", "-config", example, "-product-version", strings.Repeat("é", 40)); code != 0 {
+		t.Errorf("40 caracteres deveriam passar: código %d\n%s", code, stderr)
+	}
+}

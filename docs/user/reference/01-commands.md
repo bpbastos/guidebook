@@ -4,6 +4,7 @@
 
 ```sh
 guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]
+                [-product-version <texto>] [-date AAAA-MM-DD]
 ```
 
 Confere a documentação e grava os guias em `-out`.
@@ -18,7 +19,12 @@ saem como vieram. Caminho, nome e dimensões não mudam.
 
 ```sh
 guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]
+                [-product-version <texto>] [-date AAAA-MM-DD]
 ```
+
+Com `-product-version` e `-date`, o rodapé dos dois guias mostra
+"Versão 1.4.0 · Gerado em 20/10/2026". O guidebook nunca lê o relógio:
+sem `-date`, não há data. Data inválida sai com código 2.
 
 Faz as mesmas conferências do `build`, sem gravar nada no projeto. Para
 medir os guias, gera tudo numa pasta temporária e apaga a pasta no fim.
@@ -84,6 +90,8 @@ Mostra a versão do guidebook.
 | `-out` | `out` | pasta de saída do `build` |
 | `-guide` | `all` | guia a conferir ou gerar |
 | `-no-media` | desligada | só no `check`: não lê nem exige a mídia do e2e |
+| `-product-version` | nenhuma | `build` e `check`: versão do produto no rodapé dos guias, até 40 caracteres |
+| `-date` | nenhuma | `build` e `check`: data da geração no rodapé, no formato `AAAA-MM-DD` |
 | `-addr` | `127.0.0.1:8080` | endereço do `serve` |
 | `-interval` | `2s` | intervalo entre as conferências do `serve`, mínimo `500ms` |
 

@@ -91,7 +91,7 @@ func Load(c *config.Config) (*Guide, diag.List) {
 		l.resolve(p)
 	}
 
-	if c.User != nil {
+	if c.User != nil && c.User.ShowWhatsNew() {
 		file := l.abs(c.User.Changelog)
 		if source, err := os.ReadFile(file); err == nil {
 			releases, problems := changelog.Parse(file, source)
