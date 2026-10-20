@@ -14,6 +14,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- O `go install` gera os guias: as bibliotecas de navegador saem do
+  diretório `vendor`, que o zip de módulo do Go descartava, e o `build`
+  não falha mais ao abrir o `minisearch.js`.
 - Marco do CHANGELOG sem itens, como um "Não publicado" vazio, não
   aparece mais em "O que há de novo" nem em "Novidades técnicas".
 

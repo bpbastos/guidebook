@@ -271,8 +271,8 @@ func WriteDeveloper(c *config.Config, g *content.Guide, out string) error {
 		}
 	}
 	return writeGuide(c, v, g, out, "developer", [][2]string{
-		{"vendor/mermaid/mermaid.min.js", "assets/mermaid.min.js"},
-		{"vendor/mermaid/LICENSE", "assets/mermaid.LICENSE.txt"},
+		{"third_party/mermaid/mermaid.min.js", "assets/mermaid.min.js"},
+		{"third_party/mermaid/LICENSE", "assets/mermaid.LICENSE.txt"},
 	})
 }
 
@@ -318,8 +318,8 @@ func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide stri
 	embedded := append([][2]string{
 		{"guidebook.css", "assets/guidebook.css"},
 		{"guidebook.js", "assets/guidebook.js"},
-		{"vendor/minisearch/minisearch.js", "assets/minisearch.js"},
-		{"vendor/minisearch/LICENSE.txt", "assets/minisearch.LICENSE.txt"},
+		{"third_party/minisearch/minisearch.js", "assets/minisearch.js"},
+		{"third_party/minisearch/LICENSE.txt", "assets/minisearch.LICENSE.txt"},
 	}, vendor...)
 	for _, f := range embedded {
 		body, err := assets.ReadFile("assets/" + f[0])

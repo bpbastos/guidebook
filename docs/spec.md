@@ -665,7 +665,9 @@ como um documento longo.
 - HTML do conteúdo: saída do goldmark sem `WithUnsafe`; textos da
   configuração passam por `html/template`.
 - Recursos do guidebook (CSS, JS, bibliotecas vendorizadas) embutidos no
-  binário com `go:embed`.
+  binário com `go:embed`. Teste instala o guidebook por `go install` a
+  partir de um módulo de verdade, sem rede. O binário instalado gera o
+  projeto de exemplo ([ADR 0013](adr/0013-third-party-assets.md)).
 - **Determinismo**: mesma entrada, mesmos bytes. Sem data, hora, caminho
   absoluto ou valor aleatório na saída; mapas sempre percorridos em
   ordem; arquivos gravados em ordem. Teste gera duas vezes e compara.
@@ -750,11 +752,15 @@ como um documento longo.
 ## 10. Bibliotecas de navegador vendorizadas
 
 MiniSearch e Mermaid, versões fixas, baixadas uma vez do registro npm
-para `internal/site/assets/vendor/<nome>/`. Cada uma tem:
+para `internal/site/assets/third_party/<nome>/`. Cada uma tem:
 
 - o arquivo distribuído, tal como vem no pacote;
 - o arquivo de licença original ao lado, copiado também para a saída;
-- uma entrada no manifesto `internal/site/assets/vendor/vendor.json`.
+- uma entrada no manifesto `internal/site/assets/third_party/vendor.json`.
+
+O diretório não se chama `vendor`: o zip de módulo do Go, que o
+`go install` usa, descarta os arquivos de subdiretórios de qualquer
+diretório com esse nome ([ADR 0013](adr/0013-third-party-assets.md)).
 
 Campos da entrada no manifesto:
 
@@ -764,13 +770,14 @@ Campos da entrada no manifesto:
 | `source` | URL do tarball no registro npm |
 | `tarball_integrity` | `dist.integrity` do registro, conferido no download |
 | `file` | caminho do arquivo dentro do tarball |
-| `vendored_as` | caminho no repositório, relativo a `vendor/` |
+| `vendored_as` | caminho no repositório, relativo a `third_party/` |
 | `sha256` | SHA-256 do arquivo vendorizado |
 | `license`, `license_file` | licença e arquivo dela |
 | `reviewed_matches` | quantas ocorrências de API de rede foram revisadas à mão |
 
 Testes Go conferem:
 
+- que nenhum caminho dos recursos embutidos tem o segmento `vendor`;
 - o SHA-256 de cada arquivo contra o manifesto;
 - que a licença existe;
 - que a origem é o tarball do registro npm;
@@ -787,9 +794,10 @@ Nunca CDN. A versão do MiniSearch está no
 
 - Dependências Go: só goldmark e `go.yaml.in/yaml/v3`
   ([ADR 0004](adr/0004-yaml-library.md)), com versões fixas.
-- Teto de código: Go próprio sem testes até ~4.000 linhas; JavaScript
-  próprio até ~1.500. Passou disso, para e reavalia com o Bruno o uso de
-  ferramenta pronta.
+- Teto de código: Go próprio sem testes até ~5.000 linhas
+  ([ADR 0014](adr/0014-go-code-ceiling.md)); JavaScript próprio até
+  ~1.500. Passou disso, para e reavalia com o Bruno o uso de ferramenta
+  pronta.
 
 ## 12. Fases
 
@@ -806,6 +814,14 @@ Nunca CDN. A versão do MiniSearch está no
 | 9 | `feat/developer-guide` | seções configuráveis e Mermaid vendorizado |
 | 10 | `feat/serve-container` | `guidebook serve`, Dockerfile, CI que constrói a imagem e só publica em tag (seção 14) |
 | 11 | `docs/usage` | guias do próprio guidebook no formato dele (seção 13), README curto apontando para eles, como pôr o guidebook no compose de um projeto e `make preview` |
+| 13 | `fix/module-assets` | bibliotecas de navegador fora de diretório `vendor`, teste de `go install` a partir de um módulo de verdade; sai na v0.1.1 |
+| 14 | `docs/spec-0.2` | regras da versão 0.2.0 na spec, com ADRs, sem código |
+| 15 | `feat/image-optimization` | PNG de mídia otimizado no build, com paleta própria e determinística; `<img>` com dimensões e carga preguiçosa |
+| 16 | `feat/output-size` | tamanho de cada guia no `check` e no `build`, teto opcional por guia, CI do guidebook gerando os próprios guias |
+| 17 | `feat/check-media` | `check -no-media` e avisos de mídia sem uso |
+| 18 | `feat/config-output` | `user.whats_new` e `build -product-version` e `-date` |
+| 19 | `feat/writing-details` | texto de marcador opcional, âncoras compatíveis com a forja e números na contagem de palavras |
+| — | `chore/release-0.2.0` | marco 0.2.0 no CHANGELOG |
 
 A partir da fase 4, toda fase que muda comportamento atualiza também a
 página correspondente dos guias do guidebook (seção 13), no mesmo
@@ -1004,7 +1020,7 @@ Exemplo de serviço no compose do projeto:
 ```yaml
 services:
   guidebook:
-    image: ghcr.io/bpbastos/guidebook:v0.1.0
+    image: ghcr.io/bpbastos/guidebook:v0.1.1
     read_only: true
     tmpfs:
       - /tmp

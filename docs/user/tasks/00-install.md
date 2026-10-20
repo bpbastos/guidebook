@@ -8,7 +8,7 @@ projeto.
 Com o Go 1.27.2 ou mais novo, instale uma versão fixa:
 
 ```sh
-go install github.com/bpbastos/guidebook/cmd/guidebook@v0.1.0
+go install github.com/bpbastos/guidebook/cmd/guidebook@v0.1.1
 ```
 
 O programa fica em `$(go env GOPATH)/bin`. Confira a versão:
@@ -30,7 +30,7 @@ O programa fica em `bin/guidebook`.
 ## Use a imagem de container
 
 Cada versão publica a imagem `ghcr.io/bpbastos/guidebook:<versão>`, por
-exemplo `ghcr.io/bpbastos/guidebook:v0.1.0`. A imagem roda o `serve`.
+exemplo `ghcr.io/bpbastos/guidebook:v0.1.1`. A imagem roda o `serve`.
 Veja como pôr no compose do projeto em
 [Servir os guias](04-serve-guides.md).
 

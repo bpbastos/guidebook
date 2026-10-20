@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"regexp"
 	"strings"
 	"testing"
@@ -28,7 +29,7 @@ type vendorPackage struct {
 
 func vendorManifest(t *testing.T) []vendorPackage {
 	t.Helper()
-	body, err := assets.ReadFile("assets/vendor/vendor.json")
+	body, err := assets.ReadFile("assets/third_party/vendor.json")
 	if err != nil {
 		t.Fatalf("manifesto ausente: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestVendorHashes(t *testing.T) {
 		if want := "https://registry.npmjs.org/" + p.Name + "/-/" + p.Name + "-" + p.Version + ".tgz"; p.Source != want {
 			t.Errorf("%s: origem %q; esperava %q", p.Name, p.Source, want)
 		}
-		body, err := assets.ReadFile("assets/vendor/" + p.VendoredAs)
+		body, err := assets.ReadFile("assets/third_party/" + p.VendoredAs)
 		if err != nil {
 			t.Errorf("%s: arquivo ausente: %v", p.Name, err)
 			continue
@@ -62,7 +63,7 @@ func TestVendorHashes(t *testing.T) {
 		if got := hex.EncodeToString(sum[:]); got != p.SHA256 {
 			t.Errorf("%s: SHA-256 %s; o manifesto diz %s", p.Name, got, p.SHA256)
 		}
-		license, err := assets.ReadFile("assets/vendor/" + p.LicenseFile)
+		license, err := assets.ReadFile("assets/third_party/" + p.LicenseFile)
 		if err != nil || !strings.Contains(string(license), "Permission is hereby granted") {
 			t.Errorf("%s: licença ausente ou diferente da MIT: %v", p.Name, err)
 		}
@@ -92,7 +93,7 @@ func TestVendorOffline(t *testing.T) {
 			t.Errorf("%s: falta reviewed_matches no manifesto", p.Name)
 			continue
 		}
-		body, _ := assets.ReadFile("assets/vendor/" + p.VendoredAs)
+		body, _ := assets.ReadFile("assets/third_party/" + p.VendoredAs)
 		var found []string
 		for i, line := range strings.Split(string(body), "\n") {
 			trimmed := strings.TrimSpace(line)
@@ -107,6 +108,26 @@ func TestVendorOffline(t *testing.T) {
 		if len(found) != *p.ReviewedMatches {
 			t.Errorf("%s: %d ocorrências; o manifesto revisou %d:\n%s", p.Name, len(found), *p.ReviewedMatches, strings.Join(found, "\n"))
 		}
+	}
+}
+
+// TestNoVendorSegment: o zip de módulo do Go, que o go install usa,
+// descarta os arquivos de subdiretórios de qualquer diretório "vendor".
+// Recurso embutido sob esse nome some na instalação e o build falha.
+func TestNoVendorSegment(t *testing.T) {
+	err := fs.WalkDir(assets, "assets", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		for _, seg := range strings.Split(path, "/") {
+			if seg == "vendor" {
+				t.Errorf("%s: segmento \"vendor\" some no zip de módulo", path)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
