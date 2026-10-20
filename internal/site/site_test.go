@@ -38,7 +38,7 @@ func build(t *testing.T, cfg *config.Config) (string, map[string][]byte) {
 		t.Fatal(problems)
 	}
 	out := t.TempDir()
-	if err := WriteUser(cfg, g, out, nil); err != nil {
+	if _, err := WriteUser(cfg, g, out, nil); err != nil {
 		t.Fatal(err)
 	}
 	files := map[string][]byte{}
@@ -343,7 +343,7 @@ func buildDeveloper(t *testing.T, cfg *config.Config) map[string][]byte {
 		t.Fatal(problems)
 	}
 	out := t.TempDir()
-	if err := WriteDeveloper(cfg, g, out, nil); err != nil {
+	if _, err := WriteDeveloper(cfg, g, out, nil); err != nil {
 		t.Fatal(err)
 	}
 	files := map[string][]byte{}

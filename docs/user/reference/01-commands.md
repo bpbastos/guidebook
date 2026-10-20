@@ -20,7 +20,24 @@ saem como vieram. Caminho, nome e dimensões não mudam.
 guidebook check [-config guidebook.yaml] [-guide all|user|developer]
 ```
 
-Faz as mesmas conferências do `build`, sem gravar nada.
+Faz as mesmas conferências do `build`, sem gravar nada. Para medir os
+guias, gera tudo numa pasta temporária e apaga a pasta no fim.
+
+## Tamanho dos guias
+
+O `check` e o `build` informam, na saída padrão, o tamanho de cada guia:
+
+```
+build: guia do usuário com 9.876.543 bytes (9,4 MiB)
+```
+
+O número soma o HTML, os recursos que ele carrega e a mídia que ele
+usa, já otimizada. Um arquivo usado pelos dois guias conta nos dois. O
+`check` informa o mesmo número que o `build` gravaria.
+
+Com `user.max_size_mib` ou `developer.max_size_mib`, um guia acima do
+teto sai com código 1, com o tamanho e o limite. No `build`, os guias
+ficam gravados mesmo assim, para você ver o que pesou.
 
 ## serve
 

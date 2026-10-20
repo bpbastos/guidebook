@@ -19,6 +19,7 @@ user:
         - tasks/check-docs
         - tasks/fix-writing-rules
         - tasks/integrate-e2e
+        - tasks/integrate-ci
         - tasks/serve-guides
 
 developer:

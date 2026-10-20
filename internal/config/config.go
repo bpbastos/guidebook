@@ -58,6 +58,7 @@ type User struct {
 	Rules         Rules     `yaml:"rules"`
 	Profiles      []Profile `yaml:"profiles"`
 	Videos        Videos    `yaml:"videos"`
+	MaxSizeMiB    *int      `yaml:"max_size_mib"`
 }
 
 type Profile struct {
@@ -75,6 +76,7 @@ type Developer struct {
 	RepositoryURL string   `yaml:"repository_url"`
 	Rules         Rules    `yaml:"rules"`
 	Sections      Sections `yaml:"sections"`
+	MaxSizeMiB    *int     `yaml:"max_size_mib"`
 }
 
 // Sections segue a ordem de exibição da seção 8 da spec.

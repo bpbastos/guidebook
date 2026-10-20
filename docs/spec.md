@@ -88,15 +88,20 @@ check: guia do desenvolvedor com 3.210.987 bytes (3,1 MiB)
   carrega, com as licenças deles, e os arquivos de `media/` que ele
   cita, já otimizados (seção 9.4). O `.guidebook-output` fica fora. Um
   arquivo usado pelos dois guias conta nos dois.
-- O `check` calcula o mesmo número que o `build` gravaria, sem gravar.
+- O `check` usa o mesmo caminho do `build`: gera os guias num
+  diretório temporário, mede e apaga o diretório no fim. O número é o
+  mesmo por construção.
 - Bytes com separador de milhar `.`; MiB = 1.048.576 bytes, com uma
   casa decimal, arredondada para o mais próximo.
-- Com erro de configuração ou de E/S (código 2), as linhas não saem.
+- As linhas só saem quando os guias chegam a ser gerados. Com erro de
+  configuração, de E/S, de conteúdo ou de regra de escrita, a geração
+  não acontece e as linhas não saem.
 - **Teto opcional por guia**: `user.max_size_mib` e
   `developer.max_size_mib` (seção 4.3). Guia com mais bytes que o teto
   × 1.048.576 é erro de conteúdo (código 1), com o tamanho e o limite:
   `guidebook.yaml: user.max_size_mib: guia do usuário com 12,3 MiB
-  (limite: 10 MiB)`.
+  (limite: 10 MiB)`. As linhas de tamanho saem mesmo assim. No `build`,
+  os guias ficam gravados, para conferir o que pesou.
 
 ### 2.2 `check -no-media`
 
@@ -985,7 +990,7 @@ Nunca CDN. A versão do MiniSearch está no
 | 15 | `feat/image-optimization` | PNG de mídia otimizado no build, com paleta própria e determinística; `<img>` com dimensões e carga preguiçosa |
 | 16 | `feat/output-size` | tamanho de cada guia no `check` e no `build`, teto opcional por guia, CI do guidebook gerando os próprios guias |
 | 17 | `feat/check-media` | `check -no-media` e avisos de mídia sem uso |
-| 18 | `feat/config-output` | `user.whats_new` e `build -product-version` e `-date` |
+| 18 | `feat/config-output` | `user.whats_new` e `build -product-version` e `-date`; a tarefa "Integrar à CI" do guia do usuário passa a usar as duas opções |
 | 19 | `feat/writing-details` | texto de marcador opcional, âncoras compatíveis com a forja e números na contagem de palavras |
 | — | `chore/release-0.2.0` | marco 0.2.0 no CHANGELOG |
 
@@ -1006,8 +1011,9 @@ próprios guias é um teste da ferramenta.
   - rodar `build` e `check`;
   - integrar ao e2e de um projeto, com os formatos das seções 6 e 7;
   - integrar à CI de um projeto. O e2e gera as mídias fora do git, e
-    o `check` e o `build` rodam no mesmo job, depois dele. Os guias,
-    com `-product-version` e `-date`, viram artefato da pipeline;
+    o `check` e o `build` rodam no mesmo job, depois dele. Os guias
+    viram artefato da pipeline, com `-product-version` e `-date` a
+    partir da fase 18;
   - interpretar as recusas das regras de escrita.
 
   É uma CLI: sem capturas nem vídeos aqui. Esses recursos continuam testados

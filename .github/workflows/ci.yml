@@ -45,6 +45,17 @@ jobs:
       - name: check do próprio repositório
         run: go run ./cmd/guidebook check
 
+      # Os guias do próprio guidebook viram artefato da execução, como a
+      # tarefa "Integrar à CI" do guia do usuário ensina.
+      - name: build dos guias do guidebook
+        run: go run ./cmd/guidebook build -out out/guidebook
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: guias-do-guidebook
+          path: out/guidebook
+          if-no-files-found: error
+
   # Constrói a imagem em todo pull request, sem publicar, e confere que
   # ela serve o guia do usuário do projeto de exemplo com sistema de
   # arquivos somente leitura. Monta só o que o guia do usuário lê (o logo

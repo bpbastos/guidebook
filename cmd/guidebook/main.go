@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -102,6 +103,9 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 		o.Out = *out
 	}
 	r := build.Run(o)
+	for _, s := range r.Sizes {
+		fmt.Fprintf(stdout, "%s: guia %s com %s\n", cmd, guideName(s.Guide), formatSize(s.Bytes))
+	}
 	switch {
 	case len(r.Problems) > 0:
 		fmt.Fprint(stderr, r.Problems)
@@ -113,14 +117,19 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "check: nenhum problema encontrado")
 		return exitOK
 	}
-	for _, path := range r.Wrote {
-		kind := "do usuário"
-		if strings.HasSuffix(path, "developer-guide.html") {
-			kind = "do desenvolvedor"
-		}
-		fmt.Fprintf(stdout, "build: guia %s gravado em %s\n", kind, path)
+	for i, path := range r.Wrote {
+		fmt.Fprintf(stdout, "build: guia %s gravado em %s\n", guideName(r.Sizes[i].Guide), path)
 	}
 	return exitOK
+}
+
+// guideName dá o nome do guia na saída: "do usuário" ou "do
+// desenvolvedor".
+func guideName(guide string) string {
+	if guide == "developer" {
+		return "do desenvolvedor"
+	}
+	return "do usuário"
 }
 
 // minInterval é o menor intervalo de conferência do serve.
@@ -204,4 +213,16 @@ func translateFlagError(err error) string {
 	}
 }
 
-func formatSize(n int64) string { return "" }
+// formatSize escreve o tamanho de um guia como na spec (seção 2.1):
+// bytes com separador de milhar e MiB com uma casa decimal.
+func formatSize(n int64) string {
+	digits := strconv.FormatInt(n, 10)
+	var b strings.Builder
+	for i, d := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			b.WriteByte('.')
+		}
+		b.WriteRune(d)
+	}
+	return fmt.Sprintf("%s bytes (%s MiB)", b.String(), build.MiB(n))
+}

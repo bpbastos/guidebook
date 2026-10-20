@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bpbastos/guidebook/internal/config"
 	"github.com/bpbastos/guidebook/internal/content"
@@ -25,7 +26,8 @@ const (
 	Usage   Status = 2 // configuração inválida ou erro de leitura e gravação
 )
 
-// Options escolhe o que fazer. Sem Out, só confere.
+// Options escolhe o que fazer. Sem Out, só confere: gera num diretório
+// temporário, para medir os guias, e o apaga no fim.
 type Options struct {
 	Config   string // caminho do guidebook.yaml
 	Guide    string // all, user ou developer
@@ -34,14 +36,25 @@ type Options struct {
 	Media    *media.Cache // cache da otimização de imagens; sem ele, um novo por Run
 }
 
-// Result traz os problemas, ou o erro que impediu o build, e os guias
-// gravados.
+// Result traz os problemas, ou o erro que impediu o build, os guias
+// gravados e o tamanho de cada um.
 type Result struct {
 	Status   Status
 	Problems diag.List
 	Err      error
 	Wrote    []string
+	Sizes    []Size
 }
+
+// Size é quantos bytes um guia usa na saída (docs/spec.md, seção 2.1).
+type Size struct {
+	Guide string // "user" ou "developer"
+	Bytes int64
+}
+
+// mib é o tamanho de um MiB, unidade de user.max_size_mib e
+// developer.max_size_mib.
+const mib = 1 << 20
 
 // Run confere a documentação e, com Out, grava os guias.
 func Run(o Options) Result {
@@ -79,30 +92,58 @@ func Run(o Options) Result {
 	if len(problems) > 0 {
 		return Result{Status: Content, Problems: problems}
 	}
-	if o.Out == "" {
-		return Result{Status: OK}
+	out := o.Out
+	if out == "" {
+		tmp, err := os.MkdirTemp("", "guidebook-check-")
+		if err != nil {
+			return Result{Status: Usage, Err: fmt.Errorf("não foi possível criar o diretório temporário: %v", err)}
+		}
+		defer os.RemoveAll(tmp)
+		out = tmp
+	} else if err := output.Prepare(out); err != nil {
+		return Result{Status: Usage, Err: err}
 	}
-
 	if o.Media == nil {
 		o.Media = media.NewCache()
 	}
-	if err := output.Prepare(o.Out); err != nil {
-		return Result{Status: Usage, Err: err}
-	}
 	var r Result
 	if wantUser {
-		if err := site.WriteUser(cfg, userGuide, o.Out, o.Media); err != nil {
+		n, err := site.WriteUser(cfg, userGuide, out, o.Media)
+		if err != nil {
 			return Result{Status: Usage, Err: err}
 		}
-		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "user-guide.html"))
+		r.Sizes = append(r.Sizes, Size{"user", n})
+		r.ceiling("user", "guia do usuário", n, cfg.User.MaxSizeMiB, cfg.File)
 	}
 	if wantDev {
-		if err := site.WriteDeveloper(cfg, devGuide, o.Out, o.Media); err != nil {
+		n, err := site.WriteDeveloper(cfg, devGuide, out, o.Media)
+		if err != nil {
 			return Result{Status: Usage, Err: err}
 		}
-		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "developer-guide.html"))
+		r.Sizes = append(r.Sizes, Size{"developer", n})
+		r.ceiling("developer", "guia do desenvolvedor", n, cfg.Developer.MaxSizeMiB, cfg.File)
+	}
+	if o.Out != "" {
+		for _, s := range r.Sizes {
+			r.Wrote = append(r.Wrote, filepath.Join(o.Out, s.Guide+"-guide.html"))
+		}
+	}
+	if len(r.Problems) > 0 {
+		r.Status = Content
 	}
 	return r
+}
+
+// ceiling confere o teto opcional do guia (docs/spec.md, seção 2.1).
+func (r *Result) ceiling(guide, name string, n int64, limit *int, file string) {
+	if limit != nil && n > int64(*limit)*mib {
+		r.Problems.Addf(file, 0, guide+".max_size_mib", "%s com %s MiB (limite: %d MiB)", name, MiB(n), *limit)
+	}
+}
+
+// MiB escreve n bytes em MiB, com uma casa decimal e vírgula.
+func MiB(n int64) string {
+	return strings.Replace(fmt.Sprintf("%.1f", float64(n)/mib), ".", ",", 1)
 }
 
 // checkWriting aplica as regras de escrita de cada guia aos arquivos
