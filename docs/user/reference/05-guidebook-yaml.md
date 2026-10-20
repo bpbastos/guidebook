@@ -64,6 +64,7 @@ ui:
 | `rules.forbidden_patterns` | textos que o guia não pode citar, com a mensagem da recusa |
 | `user.dir` | pasta das páginas do guia do usuário |
 | `user.changelog` | CHANGELOG do "O que há de novo" |
+| `user.whats_new` | `false` desliga "O que há de novo" sem ler o CHANGELOG; o padrão é `true` |
 | `user.blocked_prefix` | começo dos títulos do índice de bloqueios |
 | `user.profiles` | perfis de "Comece por aqui", cada um com a trilha dele |
 | `user.videos` | manifesto e lista das tarefas com vídeo |

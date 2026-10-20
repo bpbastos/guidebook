@@ -52,6 +52,7 @@ table { border-collapse: collapse; margin: 1rem 0; display: block; overflow-x: a
 th, td { border: 1px solid var(--gb-border); padding: 0.4rem 0.7rem; text-align: left; vertical-align: top; }
 th { background: var(--gb-surface); }
 
+.gb-footer { margin-top: 2rem; padding-top: 0.5rem; border-top: 1px solid var(--gb-border); color: var(--gb-muted); font-size: 0.85rem; }
 blockquote { margin: 1rem 0; padding: 0.2rem 1rem; border-left: 4px solid var(--gb-border); color: var(--gb-muted); }
 
 .gb-header {

@@ -38,6 +38,10 @@ type Options struct {
 	UserOnly bool         // só o guia do usuário, sem ler a seção developer (serve)
 	Media    *media.Cache // cache da otimização de imagens; sem ele, um novo por Run
 	NoMedia  bool         // check -no-media: não lê mídia nem gera os guias
+
+	// ProductVersion e Date vão para o rodapé dos guias (docs/spec.md,
+	// seção 2.3); Date já conferida, em AAAA-MM-DD.
+	ProductVersion, Date string
 }
 
 // Result traz os problemas, ou o erro que impediu o build, os guias
@@ -74,6 +78,7 @@ func Run(o Options) Result {
 	if len(problems) > 0 {
 		return Result{Status: Usage, Problems: problems}
 	}
+	cfg.ProductVersion, cfg.Date = o.ProductVersion, o.Date
 	wantUser := o.Guide != "developer" && cfg.User != nil
 	wantDev := o.Guide != "user" && cfg.Developer != nil
 	if o.Guide == "user" && cfg.User == nil {
@@ -239,7 +244,7 @@ func checkWriting(cfg *config.Config, guide *content.Guide, user, dev bool) (dia
 		for _, p := range guide.Pages {
 			files = append(files, p.File)
 		}
-		if _, err := os.Stat(filepath.Join(cfg.Dir, filepath.FromSlash(cfg.User.Changelog))); err == nil {
+		if _, err := os.Stat(filepath.Join(cfg.Dir, filepath.FromSlash(cfg.User.Changelog))); err == nil && cfg.User.ShowWhatsNew() {
 			files = append(files, cfg.User.Changelog)
 		}
 		if err := apply(cfg.UserRules(), files); err != nil {

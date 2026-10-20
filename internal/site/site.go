@@ -90,6 +90,7 @@ type guideView struct {
 	UI                             map[string]string
 	Nav                            []navItem
 	Articles                       []article
+	Footer                         []string // versão e data; vazio sem as opções
 	DataFile                       string
 	User                           bool // apresentação e vídeo só existem no guia do usuário
 	Mermaid                        bool
@@ -142,8 +143,21 @@ var uiKeys = []string{
 	"tutorials", "tasks", "reference", "explanation", "glossary",
 }
 
+// footer é o rodapé com a versão do produto e a data da geração
+// (docs/spec.md, seção 2.3); vazio sem as opções.
+func footer(c *config.Config) []string {
+	var parts []string
+	if c.ProductVersion != "" {
+		parts = append(parts, strings.ReplaceAll(c.UIText("product_version"), "{version}", c.ProductVersion))
+	}
+	if c.Date != "" {
+		parts = append(parts, strings.ReplaceAll(c.UIText("generated_on"), "{date}", brazilianDate(c.Date)))
+	}
+	return parts
+}
+
 func newView(c *config.Config, guideKey string) guideView {
-	v := guideView{Product: c.Product.Name, GuideName: c.UIText(guideKey), UI: map[string]string{}}
+	v := guideView{Product: c.Product.Name, GuideName: c.UIText(guideKey), UI: map[string]string{}, Footer: footer(c)}
 	for _, k := range uiKeys {
 		v.UI[k] = c.UIText(k)
 	}

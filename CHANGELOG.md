@@ -24,6 +24,11 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   texto alternativo, links e caminhos sem ler nem exigir a mídia.
 - Avisos de mídia sem uso e de `.markers.json` sem imagem usada no
   `check`, no `build` e no log do `serve`, sem mudar o código de saída.
+- `user.whats_new: false` desliga "O que há de novo" sem ler o
+  CHANGELOG.
+- `-product-version` e `-date` no `build` e no `check`: versão do
+  produto e data da geração no rodapé dos dois guias, sem ler o
+  relógio. Textos novos `product_version` e `generated_on` em `ui`.
 - Tarefa "Integrar à CI" no guia do usuário. A CI do guidebook gera os
   próprios guias e os guarda como artefato.
 
