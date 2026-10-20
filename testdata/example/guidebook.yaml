@@ -1,0 +1,58 @@
+# Projeto de exemplo usado pelos testes e pela prévia (make preview).
+version: 1
+
+product:
+  name: Pedido Fácil
+  logo: docs/assets/logo.svg
+  colors:
+    primary: "#1f6feb"
+    accent: "#bf3989"
+
+rules:
+  max_sentence_words: 25
+  forbidden_patterns:
+    - pattern: '\b[A-Z]{2,}-\d+\b'
+      message: não cite chamado interno no guia
+
+user:
+  dir: docs/user
+  changelog: CHANGELOG.md
+  rules:
+    forbidden_patterns:
+      - pattern: '\b(src|internal|cmd)/\S+'
+        message: o guia do usuário não cita caminho de código
+  profiles:
+    - id: attendant
+      name: Atendente
+      start_here:
+        - tutorials/first-order
+        - tasks/register-order
+    - id: manager
+      name: Gerente
+      start_here:
+        - tasks/close-day
+  videos:
+    manifest: docs/user/media/videos/manifest.json
+    tasks:
+      - tasks/register-order
+
+developer:
+  repository_url: https://github.com/example/pedido-facil/blob/main
+  rules:
+    max_sentence_words: 35
+  sections:
+    overview:
+      sources: [docs/developer/overview.md]
+    modules:
+      sources: [docs/developer/modules/*.md]
+    business_rules:
+      sources: [docs/developer/rules/*.md]
+    data_model:
+      sources: [docs/developer/data-model.md]
+    decisions:
+      title: Decisões de arquitetura
+      sources: [docs/adr/*.md]
+    development:
+      sources: [docs/developer/development.md]
+    changes:
+      sources: [CHANGELOG.md]

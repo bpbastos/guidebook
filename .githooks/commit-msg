@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# Valida a mensagem de commit conforme a convenção descrita no AGENTS.md.
+# Lista todas as violações de uma vez e recusa o commit se houver alguma.
+#
+# Mensagens de merge, revert, fixup!, squash! e amend! ficam fora da
+# checagem de formato, mas a recusa de atribuição de IA vale para todas.
+
+set -u
+
+# Contagem de caracteres (não de bytes) para título e corpo.
+export LC_ALL=C.UTF-8
+
+msg_file="${1:?uso: commit-msg <arquivo-da-mensagem>}"
+
+comment_char="$(git config --get core.commentChar 2>/dev/null || true)"
+case "$comment_char" in
+	"" | auto) comment_char="#" ;;
+esac
+
+# Lê a mensagem como o git vai gravá-la: corta a partir da linha de
+# tesoura (commit -v), descarta comentários e linhas em branco nas pontas.
+lines=()
+while IFS= read -r line || [ -n "$line" ]; do
+	line="${line%$'\r'}"
+	case "$line" in
+		"$comment_char ------------------------ >8 ------------------------"*) break ;;
+		"$comment_char"*) continue ;;
+	esac
+	lines+=("$line")
+done <"$msg_file"
+
+while [ "${#lines[@]}" -gt 0 ] && [ -z "${lines[0]//[[:space:]]/}" ]; do
+	lines=("${lines[@]:1}")
+done
+while [ "${#lines[@]}" -gt 0 ] && [ -z "${lines[-1]//[[:space:]]/}" ]; do
+	unset 'lines[-1]'
+done
+
+errors=()
+fail() { errors+=("$1"); }
+
+if [ "${#lines[@]}" -eq 0 ]; then
+	echo "commit-msg: mensagem vazia." >&2
+	exit 1
+fi
+
+full="$(printf '%s\n' "${lines[@]}")"
+title="${lines[0]}"
+
+# --- Atribuição de IA: vale para qualquer mensagem -------------------------
+
+ai_names='claude|anthropic|chatgpt|gpt-?[0-9]|openai|copilot|gemini|codex|windsurf|aider|devin|cursor[ ._-]?(ai|sh|agent)'
+if printf '%s\n' "$full" | grep -qiE "(^|[^[:alnum:]])($ai_names)([^[:alnum:]]|$)"; then
+	fail "menciona ferramenta de IA (ex.: $(printf '%s\n' "$full" | grep -oiE "$ai_names" | head -n1))."
+fi
+if printf '%s\n' "$full" | grep -qiE 'generated (with|by)|gerad[oa]s? (com|por|pel[oa]) (uma |a )?(ia|inteligência artificial)([^[:alnum:]]|$)'; then
+	fail "contém atribuição do tipo \"generated with\" ou \"gerado com IA\"."
+fi
+if printf '%s\n' "$full" | grep -qF '🤖'; then
+	fail "contém emoji de robô."
+fi
+
+# --- Formato: só para mensagens comuns -------------------------------------
+
+skip_format=false
+case "$title" in
+	"Merge "* | "Revert "* | "fixup! "* | "squash! "* | "amend! "*) skip_format=true ;;
+esac
+
+if ! $skip_format; then
+	types='feat|fix|docs|style|refactor|test|chore'
+	header_re="^([a-zA-Z]+)(\(([^)]*)\))?(!)?: (.*)$"
+
+	if [[ "$title" =~ $header_re ]]; then
+		type="${BASH_REMATCH[1]}"
+		has_scope="${BASH_REMATCH[2]}"
+		scope="${BASH_REMATCH[3]}"
+		subject="${BASH_REMATCH[5]}"
+
+		if ! [[ "$type" =~ ^($types)$ ]]; then
+			fail "tipo \"$type\" inválido; use um de: ${types//|/, }."
+		fi
+		if [ -n "$has_scope" ] && ! [[ "$scope" =~ ^[a-z0-9][a-z0-9._/-]*$ ]]; then
+			fail "escopo \"$scope\" inválido; use minúsculas, dígitos, ponto, barra ou hífen."
+		fi
+
+		if [ -z "${subject//[[:space:]]/}" ]; then
+			fail "descrição vazia depois de \"tipo: \"."
+		else
+			if [[ "$subject" =~ ^[[:space:]] ]]; then
+				fail "use um só espaço depois dos dois-pontos."
+			fi
+			if printf '%s' "$subject" | grep -qE '^([A-Z]|Á|À|Â|Ã|É|Ê|Í|Ó|Ô|Õ|Ú|Ç)'; then
+				fail "a descrição deve começar em minúscula."
+			fi
+			# Heurística para o presente do indicativo: recusa a primeira
+			# palavra com cara de infinitivo, passado, gerúndio ou particípio.
+			first_word="$(printf '%s' "$subject" | sed -E 's/^[[:space:]]*([^[:space:]]+).*/\1/' | tr '[:upper:]' '[:lower:]')"
+			case "$first_word" in
+				requer | quer | põe | vai) ;;
+				*ar | *er | *ir | *or) fail "\"$first_word\" parece infinitivo; use o presente do indicativo (ex.: \"adiciona\", não \"adicionar\")." ;;
+				*ou | *eu | *iu) fail "\"$first_word\" parece passado; use o presente do indicativo (ex.: \"corrige\", não \"corrigiu\")." ;;
+				*ndo) fail "\"$first_word\" parece gerúndio; use o presente do indicativo." ;;
+				*ado | *ido) fail "\"$first_word\" parece particípio; use o presente do indicativo." ;;
+			esac
+		fi
+	else
+		fail "título fora do formato \"tipo(escopo)!: descrição\" (escopo e \"!\" opcionais; tipos: ${types//|/, })."
+	fi
+
+	if [ "${#title}" -gt 100 ]; then
+		fail "título com ${#title} caracteres; o limite é 100."
+	fi
+	if [[ "$title" == *. ]]; then
+		fail "título termina com ponto final; retire-o."
+	fi
+	if [[ "$title" =~ [[:space:]]$ ]]; then
+		fail "título com espaço no fim."
+	fi
+
+	if [ "${#lines[@]}" -gt 1 ]; then
+		if [ -n "${lines[1]}" ]; then
+			fail "falta a linha em branco entre o título e o corpo."
+		fi
+		for ((i = 1; i < ${#lines[@]}; i++)); do
+			if [ "${#lines[i]}" -gt 72 ]; then
+				fail "linha $((i + 1)) do corpo com ${#lines[i]} colunas; o limite é 72."
+			fi
+		done
+	fi
+fi
+
+if [ "${#errors[@]}" -gt 0 ]; then
+	{
+		echo "commit-msg: mensagem recusada."
+		echo
+		echo "  $title"
+		echo
+		for e in "${errors[@]}"; do
+			echo "  - $e"
+		done
+		echo
+		echo "Convenção completa no AGENTS.md (seção \"Commits\")."
+	} >&2
+	exit 1
+fi
+
+exit 0

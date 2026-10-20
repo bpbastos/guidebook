@@ -1,0 +1,86 @@
+# Confere formatação, análise estática e testes em todo pull request e na
+# main. Actions fixadas por SHA de commit; a tag fica no comentário.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "arquivos fora do gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      # O projeto de exemplo é o contrato: se o check recusar, a CI avisa.
+      - name: check do projeto de exemplo
+        run: go run ./cmd/guidebook check -config testdata/example/guidebook.yaml
+
+      # A documentação do próprio guidebook segue as regras de escrita.
+      - name: check do próprio repositório
+        run: go run ./cmd/guidebook check
+
+  # Constrói a imagem em todo pull request, sem publicar, e confere que
+  # ela serve o guia do usuário do projeto de exemplo com sistema de
+  # arquivos somente leitura. Monta só o que o guia do usuário lê (o logo
+  # do exemplo fica em docs/assets) e confere que o guia do desenvolvedor
+  # dá 404.
+  image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: docker build
+        run: docker build --build-arg VERSION=ci -t guidebook:ci .
+
+      - name: serve no container
+        run: |
+          ex="$PWD/testdata/example"
+          docker run -d --name guidebook --read-only --tmpfs /tmp \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            -p 127.0.0.1:8080:8080 \
+            -v "$ex/guidebook.yaml:/project/guidebook.yaml:ro" \
+            -v "$ex/docs/user:/project/docs/user:ro" \
+            -v "$ex/docs/assets:/project/docs/assets:ro" \
+            -v "$ex/CHANGELOG.md:/project/CHANGELOG.md:ro" \
+            guidebook:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/healthz | grep -q '"status":"ok"'; then
+              curl -fsS -o /dev/null http://127.0.0.1:8080/user-guide.html
+              code="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/developer-guide.html)"
+              test "$code" = 404
+              docker stop guidebook
+              test "$(docker inspect guidebook --format '{{.State.ExitCode}}')" = 0
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs guidebook
+          exit 1

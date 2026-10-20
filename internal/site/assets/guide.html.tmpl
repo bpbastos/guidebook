@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.GuideName}} — {{.Product}}</title>
+<link rel="stylesheet" href="assets/guidebook.css">
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<header class="gb-header">
+<a class="gb-brand" href="{{hash .Home}}">{{if .Logo}}<img src="{{.Logo}}" alt="" class="gb-logo">{{end}}<span class="gb-product">{{.Product}}</span> <span class="gb-guide-name">{{.GuideName}}</span></a>
+<div class="gb-search" hidden>
+<label for="gb-search-input" class="gb-visually-hidden">{{.UI.search}}</label>
+<input type="search" id="gb-search-input" placeholder="{{.UI.search}}" autocomplete="off" aria-controls="gb-search-results" data-no-results="{{.UI.search_no_results}}">
+<ul id="gb-search-results" class="gb-search-results" hidden></ul>
+</div>
+{{- if .User}}
+<button type="button" class="gb-present" hidden>{{.UI.present}}</button>
+{{- end}}
+<button type="button" class="gb-back" hidden>{{.UI.back_to_where_i_was}}</button>
+</header>
+<div class="gb-layout">
+<nav class="gb-nav" aria-label="{{.GuideName}}">
+<ul>
+{{- range .Nav}}
+<li>{{if .ID}}<a href="{{hash .ID}}">{{.Label}}</a>{{else}}<span class="gb-nav-group">{{.Label}}</span>
+<ul>
+{{- range .Children}}
+<li><a href="{{hash .ID}}">{{.Label}}{{if .HasVideo}} <span class="gb-has-video" title="{{$.UI.has_video}}"><span class="gb-visually-hidden">{{$.UI.has_video}}</span></span>{{end}}</a></li>
+{{- end}}
+</ul>{{end}}</li>
+{{- end}}
+</ul>
+</nav>
+<main class="gb-main">
+{{- range .Articles}}
+<article id="/{{.ID}}" class="gb-page" data-kind="{{.Kind}}"{{if .HasVideo}} data-has-video=""{{end}}>
+{{- if eq .Kind "start-here"}}{{template "start-here" $}}
+{{- else if eq .Kind "blocked"}}{{template "blocked" $}}
+{{- else if or (eq .Kind "whats-new") (eq .Kind "changes")}}{{template "releases" $}}
+{{- else if eq .Kind "business_rules"}}{{template "business-rules" $}}
+{{- else}}
+{{.HTML}}
+{{- end}}
+</article>
+{{- end}}
+</main>
+</div>
+{{- if .User}}
+<div class="gb-presentation" hidden>
+<div class="gb-presentation-bar">
+<button type="button" class="gb-slide-list-toggle" aria-expanded="false" aria-controls="gb-slide-list">{{.UI.slide_list}}</button>
+<p class="gb-slide-count" aria-live="polite" data-slide-of="{{.UI.slide_of}}"></p>
+<button type="button" class="gb-prev">{{.UI.previous}}</button>
+<button type="button" class="gb-next">{{.UI.next}}</button>
+<button type="button" class="gb-back" hidden>{{.UI.back_to_where_i_was}}</button>
+<button type="button" class="gb-fullscreen">{{.UI.fullscreen}}</button>
+<button type="button" class="gb-exit">{{.UI.exit_presentation}}</button>
+</div>
+<div class="gb-presentation-body">
+<ol id="gb-slide-list" class="gb-slide-list" data-has-video="{{.UI.has_video}}" hidden></ol>
+<div class="gb-stage" tabindex="-1">
+<div class="gb-stage-frame"><div class="gb-stage-content"></div></div>
+</div>
+</div>
+</div>
+<dialog class="gb-video-dialog">
+<div class="gb-video-body"></div>
+<button type="button" class="gb-video-close">{{.UI.close}}</button>
+</dialog>
+{{- end}}
+<dialog class="gb-dialog">
+<div class="gb-dialog-body"></div>
+<button type="button" class="gb-dialog-close">{{.UI.close}}</button>
+</dialog>
+<script src="assets/minisearch.js"></script>
+<script src="assets/{{.DataFile}}"></script>
+{{- if .Mermaid}}
+<script src="assets/mermaid.min.js"></script>
+{{- end}}
+<script src="assets/guidebook.js"></script>
+</body>
+</html>
+{{define "start-here"}}
+<h1>{{.UI.start_here}}</h1>
+<p class="gb-profile-picker" hidden><label for="gb-profile">{{.UI.profile}}</label> <select id="gb-profile">
+{{- range .Profiles}}<option value="{{.ID}}">{{.Name}}</option>{{end -}}
+</select></p>
+{{- range .Profiles}}
+<section class="gb-profile" data-profile="{{.ID}}">
+<h2>{{.Name}}</h2>
+<ol>
+{{- range .Pages}}
+<li><a href="{{hash .ID}}" data-gb="nav">{{.Title}}</a></li>
+{{- end}}
+</ol>
+</section>
+{{- end}}
+{{- end -}}
+{{define "blocked"}}
+<h1>{{.UI.blocked_index}}</h1>
+<ul>
+{{- range .Blocked}}
+<li><a href="{{hash .Page .Anchor}}" data-gb="nav">{{.Text}}</a> <span class="gb-muted">({{.PageTitle}})</span></li>
+{{- end}}
+</ul>
+{{- end -}}
+{{define "business-rules"}}
+<h1>{{.RulesTitle}}</h1>
+<p class="gb-rules-filter" hidden><label for="gb-rules-text">{{.UI.rules_filter}}</label> <input type="search" id="gb-rules-text" autocomplete="off"> <label for="gb-rules-module">{{.UI.rules_module}}</label> <select id="gb-rules-module"><option value="">{{.UI.rules_all}}</option>
+{{- range .RulesModules}}<option value="{{.Title}}">{{.Title}}</option>{{end -}}
+</select></p>
+<p class="gb-rules-none" hidden>{{.UI.rules_none}}</p>
+{{- range .RulesModules}}
+<section class="gb-rules-module" id="/{{.ID}}" data-module="{{.Title}}">
+{{.HTML}}
+</section>
+{{- end}}
+{{- end -}}
+{{define "releases"}}
+<h1>{{.ReleasesTitle}}</h1>
+{{- range .Releases}}
+<section class="gb-release">
+<h2>{{.Version}} <span class="gb-date">{{.Date}}</span></h2>
+{{- range .Groups}}
+<h3>{{.Label}}</h3>
+{{.HTML}}
+{{- end}}
+</section>
+{{- end}}
+{{- end -}}

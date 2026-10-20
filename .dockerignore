@@ -1,0 +1,6 @@
+# Só go.mod, go.sum, cmd/ e internal/ entram no build da imagem.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/

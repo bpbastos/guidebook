@@ -1,0 +1,28 @@
+{
+  "packages": [
+    {
+      "name": "minisearch",
+      "version": "7.2.0",
+      "source": "https://registry.npmjs.org/minisearch/-/minisearch-7.2.0.tgz",
+      "tarball_integrity": "sha512-dqT2XBYUOZOiC5t2HRnwADjhNS2cecp9u+TJRiJ1Qp/f5qjkeT5APcGPjHw+bz89Ms8Jp+cG4AlE+QZ/QnDglg==",
+      "file": "package/dist/umd/index.js",
+      "vendored_as": "minisearch/minisearch.js",
+      "sha256": "03c27931eb603af1d3358579e9885eafdb6a2f5fa9929557b3e77d7e99d06d03",
+      "license": "MIT",
+      "license_file": "minisearch/LICENSE.txt",
+      "reviewed_matches": 0
+    },
+    {
+      "name": "mermaid",
+      "version": "12.1.0",
+      "source": "https://registry.npmjs.org/mermaid/-/mermaid-12.1.0.tgz",
+      "tarball_integrity": "sha512-wlVCp+8eTupfCeeFvoZNNiTuHrvag0P2jz/ILgb/f/6jkVokUefOcujefi8qUe/j2asHiSePncVsz/xzzA80LQ==",
+      "file": "package/dist/mermaid.min.js",
+      "vendored_as": "mermaid/mermaid.min.js",
+      "sha256": "6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2",
+      "license": "MIT",
+      "license_file": "mermaid/LICENSE",
+      "reviewed_matches": 2
+    }
+  ]
+}

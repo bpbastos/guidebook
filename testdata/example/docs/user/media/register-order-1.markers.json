@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "image": "register-order-1.png",
+  "width": 640,
+  "height": 400,
+  "markers": [
+    { "n": 1, "x": 0.266, "y": 0.2, "text": "Campo Cliente" },
+    { "n": 2, "x": 0.641, "y": 0.2, "text": "Botão Adicionar item" },
+    { "n": 3, "x": 0.867, "y": 0.919, "text": "Botão Salvar" }
+  ]
+}

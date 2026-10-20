@@ -1,0 +1,51 @@
+# Publica a imagem no GitHub Container Registry quando o Bruno cria uma
+# tag de versão (docs/spec.md, seção 14.5). Sem segredo no repositório:
+# a autenticação usa o GITHUB_TOKEN do próprio workflow.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: confere a tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "tag fora do formato vX.Y.Z: $TAG"
+            exit 1
+          fi
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: go test
+        run: go test ./...
+
+      - name: entra no GHCR
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: constrói e publica
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          image="ghcr.io/bpbastos/guidebook:$TAG"
+          docker build --build-arg "VERSION=$TAG" -t "$image" .
+          docker push "$image"

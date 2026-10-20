@@ -1,0 +1,37 @@
+# O guidebook gera os próprios guias (docs/spec.md, seção 13). A CI roda
+# "guidebook check" sobre este arquivo.
+version: 1
+
+product:
+  name: guidebook
+
+user:
+  dir: docs/user
+  changelog: CHANGELOG.md
+  blocked_prefix: O guidebook não me deixa
+  profiles:
+    - id: maintainer
+      name: Quem mantém um projeto
+      start_here:
+        - tasks/install
+        - tutorials/first-guide
+        - tasks/write-pages
+        - tasks/check-docs
+        - tasks/fix-writing-rules
+        - tasks/integrate-e2e
+        - tasks/serve-guides
+
+developer:
+  repository_url: https://github.com/bpbastos/guidebook/blob/main
+  sections:
+    overview:
+      sources: [docs/developer/overview.md, docs/spec.md]
+    decisions:
+      title: Decisões de arquitetura
+      sources: [docs/adr/*.md]
+    delivery:
+      sources: [AGENTS.md]
+    development:
+      sources: [docs/developer/development.md]
+    changes:
+      sources: [CHANGELOG.md]

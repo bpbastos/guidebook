@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "videos": [
+    {
+      "task": "tasks/register-order",
+      "file": "register-order.webm",
+      "duration_seconds": 3.0,
+      "poster": "register-order.png"
+    }
+  ]
+}
