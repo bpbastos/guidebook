@@ -814,6 +814,7 @@ Nunca CDN. A versão do MiniSearch está no
 | 9 | `feat/developer-guide` | seções configuráveis e Mermaid vendorizado |
 | 10 | `feat/serve-container` | `guidebook serve`, Dockerfile, CI que constrói a imagem e só publica em tag (seção 14) |
 | 11 | `docs/usage` | guias do próprio guidebook no formato dele (seção 13), README curto apontando para eles, como pôr o guidebook no compose de um projeto e `make preview` |
+| 12 | `feat/dev-maintenance-and-user-only-serve` | seção "Como manter e evoluir" no guia do desenvolvedor e `serve` só com o guia do usuário |
 | 13 | `fix/module-assets` | bibliotecas de navegador fora de diretório `vendor`, teste de `go install` a partir de um módulo de verdade; sai na v0.1.1 |
 | 14 | `docs/spec-0.2` | regras da versão 0.2.0 na spec, com ADRs, sem código |
 | 15 | `feat/image-optimization` | PNG de mídia otimizado no build, com paleta própria e determinística; `<img>` com dimensões e carga preguiçosa |

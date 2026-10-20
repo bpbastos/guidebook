@@ -36,7 +36,7 @@ func TestGoInstall(t *testing.T) {
 	tmp := t.TempDir()
 	gitconfig := filepath.Join(tmp, "gitconfig")
 	bare := filepath.Join(tmp, "repo.git")
-	os.WriteFile(gitconfig, []byte(`[url "file://`+bare+`"]
+	err = os.WriteFile(gitconfig, []byte(`[url "file://`+bare+`"]
 	insteadOf = https://`+modulePath+`
 [protocol "file"]
 	allow = always
@@ -44,6 +44,9 @@ func TestGoInstall(t *testing.T) {
 	name = guidebook
 	email = guidebook@example.invalid
 `), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
 	env := []string{
 		"GIT_CONFIG_GLOBAL=" + gitconfig,
 		"GIT_CONFIG_NOSYSTEM=1",
@@ -70,7 +73,9 @@ func TestGoInstall(t *testing.T) {
 			t.Fatal(err)
 		}
 		dst := filepath.Join(tree, name)
-		os.MkdirAll(filepath.Dir(dst), 0o755)
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(dst, body, 0o644); err != nil {
 			t.Fatal(err)
 		}

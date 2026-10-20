@@ -7,6 +7,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+## [0.1.1] - 2026-10-20
+
 ### Modificado
 
 - O repositório e a imagem `ghcr.io/bpbastos/guidebook` passam a ser
