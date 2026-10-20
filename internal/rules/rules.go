@@ -20,7 +20,10 @@ import (
 const snippetWords = 8
 
 var (
-	wordRe = regexp.MustCompile(`[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*`)
+	// Palavra: letras e dígitos, com hífen ou apóstrofo interno. Dígitos
+	// separados por "." ou "," e seguidos de dígito são uma palavra só
+	// (1.234,56).
+	wordRe = regexp.MustCompile(`(?:\p{N}+(?:[.,]\p{N}+)+|[\p{L}\p{N}]+)(?:['’-][\p{L}\p{N}]+)*`)
 	// Fim de frase: pontuação, talvez fechamento de parêntese ou aspas, e
 	// espaço. O fim do bloco também fecha a frase.
 	sentenceEndRe = regexp.MustCompile(`[.!?:…][)\]"'»”’*_]*\s`)

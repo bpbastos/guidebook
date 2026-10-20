@@ -27,7 +27,9 @@ var version = "dev"
 
 const usage = `uso:
   guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]
+                  [-product-version <texto>] [-date AAAA-MM-DD]
   guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]
+                  [-product-version <texto>] [-date AAAA-MM-DD]
   guidebook serve [-config guidebook.yaml] [-addr 127.0.0.1:8080] [-interval 2s]
   guidebook version
 

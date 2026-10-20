@@ -230,7 +230,8 @@ vínculo funcione na forja e no guia
 - cada espaço vira `-`, sem juntar hífens: `Pedido — novo` vira
   `pedido--novo`;
 - âncora repetida na mesma página ganha `-1`, `-2`... na ordem em que
-  aparece.
+  aparece; se o resultado já existir, o número sobe, como no GitHub;
+- título sem letra nem dígito vira `secao`, para o `id` não ficar vazio.
 
 O trecho de um vínculo (`pagina.md#trecho`) é decodificado do
 percent-encoding antes de comparar. Ele casa com a âncora igual. Sem
@@ -595,7 +596,9 @@ lista numerada. O marcador `n` corresponde ao item `n` da lista.
   lista falha; só a contagem depende da lista.
 - Imagem sem `.markers.json` ao lado é uma imagem comum.
 - Marcador sem `text` usa o texto do item `n` da lista: texto puro, sem
-  marcação, com os espaços juntados. Esse texto não tem limite de
+  marcação, com os espaços juntados. É o mesmo texto puro de títulos e
+  texto alternativo: o código em linha entra sem as crases, e o link,
+  pelo texto dele. `text` presente e vazio é erro. Esse texto não tem limite de
   tamanho. Na visita guiada e na lista "Pontos desta tela", os dois
   casos aparecem iguais.
 

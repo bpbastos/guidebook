@@ -26,7 +26,7 @@ O guidebook lista todos os problemas de uma vez. Veja como
 [corrigir as recusas](03-fix-writing-rules.md).
 
 O código de saída diz o tipo de problema. A lista está nos
-[comandos](../reference/01-commands.md#codigos-de-saida).
+[comandos](../reference/01-commands.md#códigos-de-saída).
 
 ## Ponha no CI do projeto
 

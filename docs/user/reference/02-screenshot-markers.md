@@ -31,7 +31,7 @@ Para a captura `docs/user/media/register-order-1.png`, o e2e grava
 | `width`, `height` | tamanho da captura em pixels, igual ao do arquivo |
 | `n` | número do marcador, de 1 em diante, em ordem |
 | `x`, `y` | centro do marcador, de 0 a 1, a partir do canto de cima à esquerda |
-| `text` | rótulo curto, até 80 caracteres |
+| `text` | opcional: rótulo curto, até 80 caracteres; sem ele, vale o texto do passo `n` da lista |
 
 A captura precisa ser PNG ou JPEG.
 
