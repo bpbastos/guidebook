@@ -43,7 +43,7 @@ func TestLoadExample(t *testing.T) {
 	if task.Title != "Registrar um pedido" {
 		t.Errorf("título = %q", task.Title)
 	}
-	wantBlocked := []Heading{{Level: 2, Text: "O sistema não me deixa salvar o pedido", Anchor: "o-sistema-nao-me-deixa-salvar-o-pedido"}}
+	wantBlocked := []Heading{{Level: 2, Text: "O sistema não me deixa salvar o pedido", Anchor: "o-sistema-não-me-deixa-salvar-o-pedido"}}
 	if !reflect.DeepEqual(task.Blocked, wantBlocked) {
 		t.Errorf("bloqueios = %+v", task.Blocked)
 	}
@@ -76,6 +76,96 @@ func TestLoadExample(t *testing.T) {
 	}
 }
 
+// TestAnchors usa títulos reais e a regra do GitHub (docs/spec.md,
+// seção 3.2): acentos mantidos, pontuação fora, espaço vira hífen sem
+// juntar, repetição com -1, -2...
+func TestAnchors(t *testing.T) {
+	titles := []string{
+		"Configuração — avançada",
+		"Entrada/saída de dados",
+		"Use `guidebook check` na CI",
+		"Passo 1. Abra o pedido",
+		"O que há de novo?",
+		"Campo max_size_mib",
+		"Exemplo",
+		"Exemplo",
+		"Exemplo",
+		"Exemplo-1",
+		"???",
+	}
+	want := []string{
+		"configuração--avançada",
+		"entradasaída-de-dados",
+		"use-guidebook-check-na-ci",
+		"passo-1-abra-o-pedido",
+		"o-que-há-de-novo",
+		"campo-max_size_mib",
+		"exemplo",
+		"exemplo-1",
+		"exemplo-2",
+		"exemplo-1-1",
+		"secao",
+	}
+	var a anchors
+	for i, title := range titles {
+		if got := a.next(title); got != want[i] {
+			t.Errorf("âncora de %q = %q; esperava %q", title, got, want[i])
+		}
+	}
+}
+
+// TestFragments: o trecho do vínculo casa a âncora do GitHub, a forma do
+// GitLab (hífens juntados) e o percent-encoding; o link aponta sempre
+// para a âncora do guia.
+func TestFragments(t *testing.T) {
+	cfg := projectFiles(t, linkConfig, map[string]string{
+		"docs/user/tasks/a.md": "# A\n\n" +
+			"[github](b.md#configuração--avançada)\n\n" +
+			"[gitlab](b.md#configuração-avançada)\n\n" +
+			"[percent](b.md#configura%C3%A7%C3%A3o--avan%C3%A7ada)\n\n" +
+			"[local](#use-guidebook-check)\n\n" +
+			"## Use `guidebook check`\n",
+		"docs/user/tasks/b.md": "# B\n\n## Configuração — avançada\n\nTexto.\n",
+	})
+	g, problems := Load(cfg)
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	html := page(t, g, "tasks/a").HTML
+	for _, label := range []string{"github", "gitlab", "percent"} {
+		if want := `<a href="#/tasks/b/configura%C3%A7%C3%A3o--avan%C3%A7ada" data-gb="nav">` + label + `</a>`; !strings.Contains(html, want) {
+			t.Errorf("HTML sem %q:\n%s", want, html)
+		}
+	}
+	if !strings.Contains(html, `id="/tasks/b/configuração--avançada"`) && !strings.Contains(page(t, g, "tasks/b").HTML, `id="/tasks/b/configuração--avançada"`) {
+		t.Errorf("id da seção sem a regra do GitHub:\n%s", page(t, g, "tasks/b").HTML)
+	}
+	if !strings.Contains(html, `href="#/tasks/a/use-guidebook-check"`) {
+		t.Errorf("âncora local com código:\n%s", html)
+	}
+}
+
+func TestFragmentProblems(t *testing.T) {
+	for name, tt := range map[string]struct{ link, want string }{
+		"forma antiga, sem acento":  {"[x](b.md#configuracao-avancada)", `âncora "#configuracao-avancada" não existe`},
+		"forma do GitLab ambígua":   {"[x](b.md#a-b)", `"#a-b" casa com mais de uma âncora`},
+		"percent-encoding inválido": {"[x](b.md#a%zz)", `trecho inválido`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg := projectFiles(t, linkConfig, map[string]string{
+				"docs/user/tasks/a.md": "# A\n\n" + tt.link + "\n",
+				"docs/user/tasks/b.md": "# B\n\n## Configuração — avançada\n\n## A — B\n\n## A — — B\n",
+			})
+			_, problems := Load(cfg)
+			if len(problems) != 1 || !strings.Contains(problems[0].Msg, tt.want) {
+				t.Errorf("problemas = %v; esperava %q", problems, tt.want)
+			}
+		})
+	}
+}
+
+// TestSlug: o nome das páginas do guia do desenvolvedor continua com a
+// regra antiga (ADR 0016).
 func TestSlug(t *testing.T) {
 	tests := map[string]string{
 		"Registre o pedido":        "registre-o-pedido",
@@ -121,8 +211,8 @@ func TestLinks(t *testing.T) {
 		{"referência em diálogo", "[x](../reference/r.md)", `<a href="#/reference/r" data-gb="dialog">x</a>`},
 		{"termo do glossário em diálogo", "[x](../glossary.md#pedido)", `<a href="#/glossary/pedido" data-gb="dialog">x</a>`},
 		{"glossário sem âncora navega", "[x](../glossary.md)", `<a href="#/glossary" data-gb="nav">x</a>`},
-		{"bloqueio em diálogo", "[x](b.md#o-sistema-nao-me-deixa-salvar)", `<a href="#/tasks/b/o-sistema-nao-me-deixa-salvar" data-gb="dialog">x</a>`},
-		{"âncora local", "[x](#secao-local)", `<a href="#/tasks/a/secao-local" data-gb="nav">x</a>`},
+		{"bloqueio em diálogo", "[x](b.md#o-sistema-não-me-deixa-salvar)", `<a href="#/tasks/b/o-sistema-n%C3%A3o-me-deixa-salvar" data-gb="dialog">x</a>`},
+		{"âncora local", "[x](#seção-local)", `<a href="#/tasks/a/se%C3%A7%C3%A3o-local" data-gb="nav">x</a>`},
 		{"externo", "[x](https://exemplo.com/a)", `<a href="https://exemplo.com/a" target="_blank" rel="noopener noreferrer">x</a>`},
 		{"e-mail", "[x](mailto:a@exemplo.com)", `<a href="mailto:a@exemplo.com" target="_blank" rel="noopener noreferrer">x</a>`},
 		{"imagem", "![Tela de pedido](../media/tela.png)", `<img src="media/docs/user/media/tela.png" alt="Tela de pedido" loading="lazy" decoding="async">`},
@@ -221,8 +311,8 @@ func TestDuplicateAnchors(t *testing.T) {
 		t.Fatal(problems)
 	}
 	a := page(t, g, "tasks/a")
-	if !strings.Contains(a.HTML, `id="/tasks/a/passo"`) || !strings.Contains(a.HTML, `id="/tasks/a/passo-2"`) {
-		t.Errorf("âncoras repetidas deveriam ganhar -2:\n%s", a.HTML)
+	if !strings.Contains(a.HTML, `id="/tasks/a/passo"`) || !strings.Contains(a.HTML, `id="/tasks/a/passo-1"`) {
+		t.Errorf("âncoras repetidas deveriam ganhar -1:\n%s", a.HTML)
 	}
 }
 
@@ -254,7 +344,7 @@ func TestSections(t *testing.T) {
 	want := []Section{
 		{Anchor: "", Title: "Registrar um pedido", Text: ""},
 		{Anchor: "registre-o-pedido", Title: "Registre o pedido", Text: "Tela de novo pedido Escolha o cliente. Adicione os itens. Clique em Salvar. Veja os estados do pedido."},
-		{Anchor: "o-sistema-nao-me-deixa-salvar-o-pedido", Title: "O sistema não me deixa salvar o pedido", Text: "O botão Salvar fica desligado enquanto falta o cliente. Escolha o cliente e o botão liga."},
+		{Anchor: "o-sistema-não-me-deixa-salvar-o-pedido", Title: "O sistema não me deixa salvar o pedido", Text: "O botão Salvar fica desligado enquanto falta o cliente. Escolha o cliente e o botão liga."},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("seções =\n%+v\nesperava\n%+v", got, want)

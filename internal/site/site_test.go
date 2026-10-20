@@ -98,7 +98,7 @@ func TestUserGuideHTML(t *testing.T) {
 		`<section class="gb-profile" data-profile="manager">`,
 		`<li><a href="#/tasks/close-day" data-gb="nav">Fechar o dia</a></li>`,
 		`<article id="/blocked" class="gb-page" data-kind="blocked">`,
-		`<a href="#/tasks/register-order/o-sistema-nao-me-deixa-salvar-o-pedido" data-gb="nav">O sistema não me deixa salvar o pedido</a>`,
+		`<a href="#/tasks/register-order/o-sistema-n%c3%a3o-me-deixa-salvar-o-pedido" data-gb="nav">O sistema não me deixa salvar o pedido</a>`,
 		`<article id="/whats-new" class="gb-page" data-kind="whats-new">`,
 		`<h2>1.1.0 <span class="gb-date">15/09/2026</span></h2>`,
 		`<h3>Corrigido</h3>`,
@@ -315,7 +315,7 @@ func TestSearchDocs(t *testing.T) {
 		}
 		byID[d.ID] = i
 	}
-	i, ok := byID["tasks/register-order/o-sistema-nao-me-deixa-salvar-o-pedido"]
+	i, ok := byID["tasks/register-order/o-sistema-não-me-deixa-salvar-o-pedido"]
 	if !ok {
 		t.Fatalf("seção de bloqueio fora da busca; documentos: %v", byID)
 	}

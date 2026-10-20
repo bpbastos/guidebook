@@ -499,3 +499,8 @@ func Slug(text string) string {
 	}
 	return b.String()
 }
+
+// anchors gera as âncoras de uma página.
+type anchors struct{}
+
+func (a *anchors) next(text string) string { return Slug(text) }
