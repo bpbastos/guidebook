@@ -48,8 +48,8 @@ type marker struct {
 
 const maxMarkerText = 80
 
-// markersFile devolve o caminho do .markers.json ao lado da captura.
-func markersFile(imageRel string) string {
+// MarkersFile devolve o caminho do .markers.json ao lado da captura.
+func MarkersFile(imageRel string) string {
 	return strings.TrimSuffix(imageRel, path.Ext(imageRel)) + ".markers.json"
 }
 
@@ -57,7 +57,7 @@ func markersFile(imageRel string) string {
 // ela não tem .markers.json. Problemas do JSON saem no arquivo dele; os
 // de ligação com a lista, na linha da imagem.
 func (l *loader) shot(p *parsed, img *ast.Image, imageRel, src string, report func(ast.Node, string, ...any)) (result *shot) {
-	jsonRel := markersFile(imageRel)
+	jsonRel := MarkersFile(imageRel)
 	body, err := os.ReadFile(l.abs(jsonRel))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil

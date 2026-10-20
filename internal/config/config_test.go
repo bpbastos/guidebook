@@ -261,3 +261,29 @@ developer:
 		t.Errorf("títulos = %v; esperava %v", titles, want)
 	}
 }
+
+// TestNoMedia: no check -no-media, o manifesto pode faltar, mas as
+// regras de caminho continuam (docs/spec.md, seção 2.2).
+func TestNoMedia(t *testing.T) {
+	load := func(yaml string) diag.List {
+		dir := writeProject(t, map[string]string{"guidebook.yaml": yaml, "docs/user/": ""})
+		_, problems := LoadNoMedia(filepath.Join(dir, "guidebook.yaml"))
+		return problems
+	}
+	for name, yaml := range map[string]string{
+		"sem manifesto":         minimal + "  videos:\n    tasks: [tasks/x]\n",
+		"manifesto inexistente": minimal + "  videos:\n    manifest: docs/user/media/videos/manifest.json\n    tasks: [tasks/x]\n",
+	} {
+		if problems := load(yaml); len(problems) > 0 {
+			t.Errorf("%s: deveria aceitar no modo sem mídia:\n%s", name, problems)
+		}
+	}
+	problems := load(minimal + "  videos:\n    manifest: ../fora/manifest.json\n    tasks: [tasks/x]\n")
+	if len(problems) != 1 || problems[0].Field != "user.videos.manifest" || !strings.Contains(problems[0].Msg, "sai do diretório") {
+		t.Errorf("caminho que sai do projeto deveria continuar recusado: %v", problems)
+	}
+	// Sem o modo, nada fica mais frouxo.
+	if _, problems := loadYAML(t, minimal+"  videos:\n    tasks: [tasks/x]\n", nil); len(problems) == 0 {
+		t.Error("o Load comum deveria exigir o manifesto")
+	}
+}

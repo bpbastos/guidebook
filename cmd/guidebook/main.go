@@ -26,12 +26,13 @@ var version = "dev"
 
 const usage = `uso:
   guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]
-  guidebook check [-config guidebook.yaml] [-guide all|user|developer]
+  guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]
   guidebook serve [-config guidebook.yaml] [-addr 127.0.0.1:8080] [-interval 2s]
   guidebook version
 
 build   valida a documentação e grava os guias em -out
-check   faz as mesmas validações sem gravar nada
+check   faz as mesmas validações sem gravar nada no projeto; com
+        -no-media, não exige a mídia gerada pelo e2e
 serve   gera e serve só o guia do usuário por HTTP, regerando quando a
         entrada muda; o guia do desenvolvedor nunca é servido
 version mostra a versão
@@ -81,8 +82,11 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 	configPath := fs.String("config", "guidebook.yaml", "")
 	guide := fs.String("guide", "all", "")
 	var out *string
+	noMedia := new(bool)
 	if cmd == "build" {
 		out = fs.String("out", "out", "")
+	} else {
+		noMedia = fs.Bool("no-media", false, "")
 	}
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -98,7 +102,7 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 		return usageError(stderr, "-guide aceita all, user ou developer (veio %q)", *guide)
 	}
 
-	o := build.Options{Config: *configPath, Guide: *guide}
+	o := build.Options{Config: *configPath, Guide: *guide, NoMedia: *noMedia}
 	if out != nil {
 		o.Out = *out
 	}
@@ -106,12 +110,17 @@ func validateAndBuild(cmd string, args []string, stdout, stderr io.Writer) int {
 	for _, s := range r.Sizes {
 		fmt.Fprintf(stdout, "%s: guia %s com %s\n", cmd, guideName(s.Guide), formatSize(s.Bytes))
 	}
-	switch {
-	case len(r.Problems) > 0:
+	if len(r.Problems) > 0 {
 		fmt.Fprint(stderr, r.Problems)
-		return int(r.Status)
-	case r.Err != nil:
+	} else if r.Err != nil {
 		fmt.Fprintf(stderr, "guidebook: %v\n", r.Err)
+	}
+	// Avisos depois dos erros, sem mudar o código (docs/spec.md, seção 2.4).
+	for _, w := range r.Warnings {
+		fmt.Fprintln(stderr, w)
+	}
+	switch {
+	case len(r.Problems) > 0 || r.Err != nil:
 		return int(r.Status)
 	case cmd == "check":
 		fmt.Fprintln(stdout, "check: nenhum problema encontrado")

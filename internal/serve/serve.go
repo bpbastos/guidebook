@@ -113,6 +113,9 @@ func (s *Server) Refresh() bool {
 	o := s.opts
 	o.Out = dir
 	r := build.Run(o)
+	for _, w := range r.Warnings {
+		s.logf("  %s", w) // aviso não é falha: o build segue bom
+	}
 	if len(r.Problems) > 0 || r.Err != nil {
 		var problems []string
 		for _, p := range r.Problems.Sorted() {

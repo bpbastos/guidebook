@@ -28,6 +28,10 @@ type Config struct {
 	// o diretório dele, base de todos os caminhos relativos.
 	File string `yaml:"-"`
 	Dir  string `yaml:"-"`
+
+	// NoMedia é o modo do "check -no-media": nenhum arquivo de mídia é
+	// lido nem exigido (docs/spec.md, seção 2.2).
+	NoMedia bool `yaml:"-"`
 }
 
 type Product struct {
@@ -107,7 +111,7 @@ type Section struct {
 // encontrados de uma vez. Com problemas, o Config devolvido é parcial e
 // não deve ser usado.
 func Load(path string) (*Config, diag.List) {
-	return load(path, false)
+	return load(path, false, false)
 }
 
 // NoUserGuide é a recusa de LoadUser quando o guidebook.yaml não tem a
@@ -117,11 +121,11 @@ const NoUserGuide = "o serve só serve o guia do usuário; defina a seção user
 // LoadUser é o Load do serve (spec, seção 14): descarta a seção
 // developer antes de validar, sem ler nem conferir as fontes dela.
 func LoadUser(path string) (*Config, diag.List) {
-	return load(path, true)
+	return load(path, true, false)
 }
 
-func load(path string, userOnly bool) (*Config, diag.List) {
-	c := &Config{File: path, Dir: filepath.Dir(path)}
+func load(path string, userOnly, noMedia bool) (*Config, diag.List) {
+	c := &Config{File: path, Dir: filepath.Dir(path), NoMedia: noMedia}
 	var problems diag.List
 	report := func(field, format string, args ...any) {
 		problems.Addf(path, 0, field, format, args...)
@@ -302,3 +306,9 @@ var (
 	colorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 	idRe    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 )
+
+// LoadNoMedia é o Load do "check -no-media" (docs/spec.md, seção 2.2):
+// o manifesto de vídeos pode faltar; as regras de caminho continuam.
+func LoadNoMedia(path string) (*Config, diag.List) {
+	return load(path, false, true)
+}

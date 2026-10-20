@@ -20,6 +20,10 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   recursos e mídia. O `check` gera numa pasta temporária para medir.
 - Teto opcional por guia em `user.max_size_mib` e
   `developer.max_size_mib`; acima dele, código 1.
+- `check -no-media`, para a CI que roda antes do e2e: confere escrita,
+  texto alternativo, links e caminhos sem ler nem exigir a mídia.
+- Avisos de mídia sem uso e de `.markers.json` sem imagem usada no
+  `check`, no `build` e no log do `serve`, sem mudar o código de saída.
 - Tarefa "Integrar à CI" no guia do usuário. A CI do guidebook gera os
   próprios guias e os guarda como artefato.
 

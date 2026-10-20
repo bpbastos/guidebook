@@ -29,7 +29,7 @@ type videoEntry struct {
 // da lista tem só o formato conferido: os arquivos dela podem faltar.
 func (l *loader) videos(byID map[string]*Page) {
 	u := l.c.User
-	if u == nil || u.Videos.Manifest == "" {
+	if u == nil || u.Videos.Manifest == "" || l.c.NoMedia {
 		return
 	}
 	file := l.abs(u.Videos.Manifest)

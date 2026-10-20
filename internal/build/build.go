@@ -4,8 +4,11 @@ package build
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bpbastos/guidebook/internal/config"
@@ -34,6 +37,7 @@ type Options struct {
 	Out      string
 	UserOnly bool         // só o guia do usuário, sem ler a seção developer (serve)
 	Media    *media.Cache // cache da otimização de imagens; sem ele, um novo por Run
+	NoMedia  bool         // check -no-media: não lê mídia nem gera os guias
 }
 
 // Result traz os problemas, ou o erro que impediu o build, os guias
@@ -44,6 +48,7 @@ type Result struct {
 	Err      error
 	Wrote    []string
 	Sizes    []Size
+	Warnings []string // linhas "aviso: <arquivo>: ...", já em ordem
 }
 
 // Size é quantos bytes um guia usa na saída (docs/spec.md, seção 2.1).
@@ -59,8 +64,11 @@ const mib = 1 << 20
 // Run confere a documentação e, com Out, grava os guias.
 func Run(o Options) Result {
 	load := config.Load
-	if o.UserOnly {
+	switch {
+	case o.UserOnly:
 		load, o.Guide = config.LoadUser, "user"
+	case o.NoMedia:
+		load = config.LoadNoMedia
 	}
 	cfg, problems := load(o.Config)
 	if len(problems) > 0 {
@@ -89,8 +97,15 @@ func Run(o Options) Result {
 		return Result{Status: Usage, Err: err}
 	}
 	problems = append(problems, writing...)
+	var warnings []string
+	if wantUser && !o.NoMedia {
+		warnings = mediaWarnings(cfg, userGuide, devGuide)
+	}
 	if len(problems) > 0 {
-		return Result{Status: Content, Problems: problems}
+		return Result{Status: Content, Problems: problems, Warnings: warnings}
+	}
+	if o.NoMedia {
+		return Result{Status: OK}
 	}
 	out := o.Out
 	if out == "" {
@@ -106,7 +121,7 @@ func Run(o Options) Result {
 	if o.Media == nil {
 		o.Media = media.NewCache()
 	}
-	var r Result
+	r := Result{Warnings: warnings}
 	if wantUser {
 		n, err := site.WriteUser(cfg, userGuide, out, o.Media)
 		if err != nil {
@@ -132,6 +147,56 @@ func Run(o Options) Result {
 		r.Status = Content
 	}
 	return r
+}
+
+// mediaWarnings lista o que fica em <user.dir>/media sem uso por nenhum
+// dos guias lidos (docs/spec.md, seção 2.4). "Usado" é a mesma lista de
+// mídia que o build copia, mais o manifesto de vídeos e o .markers.json
+// das imagens usadas.
+func mediaWarnings(cfg *config.Config, guides ...*content.Guide) []string {
+	used := map[string]bool{}
+	for _, g := range guides {
+		if g == nil {
+			continue
+		}
+		for _, m := range g.Media {
+			used[m] = true
+			used[content.MarkersFile(m)] = true
+		}
+	}
+	if cfg.User.Videos.Manifest != "" {
+		used[cfg.User.Videos.Manifest] = true
+	}
+	var unused, markers []string
+	root := path.Join(cfg.User.Dir, "media")
+	fs.WalkDir(os.DirFS(cfg.Dir), root, func(p string, d fs.DirEntry, err error) error {
+		switch {
+		case err != nil:
+			return nil // sem a pasta de mídia, não há o que avisar
+		case p != root && strings.HasPrefix(d.Name(), "."):
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+		case d.IsDir() || used[p]:
+		case strings.HasSuffix(p, ".markers.json"):
+			markers = append(markers, p)
+		default:
+			unused = append(unused, p)
+		}
+		return nil
+	})
+	// Ordem de bytes do caminho inteiro: a do WalkDir põe "a/x" antes de
+	// "a-b".
+	slices.Sort(unused)
+	slices.Sort(markers)
+	var lines []string
+	for _, p := range unused {
+		lines = append(lines, "aviso: "+filepath.Join(cfg.Dir, filepath.FromSlash(p))+": mídia sem uso")
+	}
+	for _, p := range markers {
+		lines = append(lines, "aviso: "+filepath.Join(cfg.Dir, filepath.FromSlash(p))+": marcadores sem imagem usada")
+	}
+	return lines
 }
 
 // ceiling confere o teto opcional do guia (docs/spec.md, seção 2.1).

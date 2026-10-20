@@ -34,9 +34,10 @@ guidebook version
 
 - `build` valida configuração e conteúdo, aplica as regras de escrita e
   grava os guias em `-out`.
-- `check` faz as mesmas validações sem gravar nada (para o CI do
-  projeto). Com `-no-media`, deixa de exigir a mídia gerada pelo e2e
-  (seção 2.2).
+- `check` faz as mesmas validações sem gravar nada no projeto (para o
+  CI do projeto). Para medir os guias, gera num diretório temporário
+  apagado no fim (seção 2.1). Com `-no-media`, deixa de exigir a mídia
+  gerada pelo e2e (seção 2.2).
 - `-product-version` e `-date` levam a versão do produto e a data da
   geração aos dois guias (seção 2.3).
 - `serve` gera e serve só o guia do usuário por HTTP, regerando
@@ -112,7 +113,8 @@ Com `-no-media`, o `check` não lê nenhum arquivo de mídia e não exige:
   arquivos de vídeo e de poster;
 - o conteúdo do `.markers.json` e do manifesto, que não são lidos;
 - a ligação entre marcadores e lista numerada (seção 6.2);
-- o tamanho dos guias e o teto (seção 2.1).
+- o tamanho dos guias e o teto (seção 2.1): sem mídia para copiar, os
+  guias não são gerados, e a linha de tamanho não sai.
 
 Continua conferindo as regras de escrita, o texto alternativo e os
 vínculos entre páginas. Confere também as regras de caminho de imagem e
@@ -158,6 +160,12 @@ manifesto de vídeos e o vídeo e o poster das tarefas de
 `user.videos.tasks`. Vídeo do manifesto fora de `user.videos.tasks`
 conta como sem uso. Entradas que começam com `.` ficam fora, como na
 seção 3.1. O `.markers.json` de imagem não usada sai só no grupo 2.
+
+"Usado" vem da mesma lista de mídia que o `build` copia, sem uma
+varredura com regras próprias. Os avisos saem quando o guia do usuário
+é lido: com `-guide developer`, não saem. Com `-guide user`, só a mídia
+do guia do usuário conta como usada. O `serve` registra os avisos no
+log, e o build continua bom.
 
 ## 3. Entrada
 

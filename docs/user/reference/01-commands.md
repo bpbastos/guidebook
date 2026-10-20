@@ -17,11 +17,31 @@ saem como vieram. Caminho, nome e dimensões não mudam.
 ## check
 
 ```sh
-guidebook check [-config guidebook.yaml] [-guide all|user|developer]
+guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]
 ```
 
-Faz as mesmas conferências do `build`, sem gravar nada. Para medir os
-guias, gera tudo numa pasta temporária e apaga a pasta no fim.
+Faz as mesmas conferências do `build`, sem gravar nada no projeto. Para
+medir os guias, gera tudo numa pasta temporária e apaga a pasta no fim.
+
+Com `-no-media`, o `check` não lê nenhum arquivo de mídia. Serve para a
+CI que roda antes do e2e, quando as capturas e os vídeos ainda não
+existem. Ele continua conferindo as regras de escrita, o texto
+alternativo, os links entre páginas e os caminhos das imagens. Não
+confere marcadores, vídeos nem tamanho, e não gera os guias.
+
+## Avisos
+
+O `check` e o `build` avisam, na saída de erro, o que sobra na pasta
+`media/` do guia do usuário:
+
+```
+aviso: docs/user/media/old.png: mídia sem uso
+aviso: docs/user/media/old.markers.json: marcadores sem imagem usada
+```
+
+Aviso não muda o código de saída. Vídeo do manifesto fora de
+`user.videos.tasks` também conta como sem uso. Apague o arquivo que
+sobrou ou cite-o numa página.
 
 ## Tamanho dos guias
 
@@ -63,6 +83,7 @@ Mostra a versão do guidebook.
 | `-config` | `guidebook.yaml` | arquivo de configuração |
 | `-out` | `out` | pasta de saída do `build` |
 | `-guide` | `all` | guia a conferir ou gerar |
+| `-no-media` | desligada | só no `check`: não lê nem exige a mídia do e2e |
 | `-addr` | `127.0.0.1:8080` | endereço do `serve` |
 | `-interval` | `2s` | intervalo entre as conferências do `serve`, mínimo `500ms` |
 

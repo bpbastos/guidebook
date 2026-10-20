@@ -312,11 +312,13 @@ func (l *loader) resolve(p *parsed) {
 				report(n, "%s", problem)
 			} else {
 				n.Destination = []byte(src)
-				rel := strings.TrimPrefix(src, "media/")
-				if s := l.shot(p, n, rel, src, report); s != nil {
-					p.shots[n.Parent()] = s
-				} else {
-					l.imageAttributes(n, rel)
+				// No check -no-media, a imagem não é lida.
+				if rel := strings.TrimPrefix(src, "media/"); !l.c.NoMedia {
+					if s := l.shot(p, n, rel, src, report); s != nil {
+						p.shots[n.Parent()] = s
+					} else {
+						l.imageAttributes(n, rel)
+					}
 				}
 			}
 		}
@@ -440,6 +442,9 @@ func (l *loader) image(from *parsed, dest string) (string, string) {
 	rel, problem := l.relative(from, dest)
 	if problem != "" {
 		return "", problem
+	}
+	if l.c.NoMedia {
+		return "media/" + rel, ""
 	}
 	if info, err := os.Stat(l.abs(rel)); err != nil || info.IsDir() {
 		return "", fmt.Sprintf("imagem %q não existe", rel)

@@ -11,6 +11,10 @@ Por isso o `check` e o `build` rodam no mesmo job do e2e, depois dele.
 Em outro job, as mídias não existem, e o `check` recusa as imagens que
 faltam.
 
+Para conferir a escrita antes do e2e, num job sem navegador, use
+`guidebook check -no-media`. Ele não lê as mídias; o `check` completo
+continua depois do e2e.
+
 Ponha a pasta das mídias no `.gitignore` do projeto, para não
 versionar o que o e2e gera:
 
