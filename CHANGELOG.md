@@ -16,6 +16,12 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   JPEG, `width` e `height`.
 - O `serve` guarda as imagens otimizadas em memória e não otimiza de
   novo a que não mudou.
+- O `check` e o `build` informam o tamanho de cada guia, com HTML,
+  recursos e mídia. O `check` gera numa pasta temporária para medir.
+- Teto opcional por guia em `user.max_size_mib` e
+  `developer.max_size_mib`; acima dele, código 1.
+- Tarefa "Integrar à CI" no guia do usuário. A CI do guidebook gera os
+  próprios guias e os guarda como artefato.
 
 ## [0.1.1] - 2026-10-20
 

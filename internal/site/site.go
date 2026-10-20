@@ -173,9 +173,10 @@ func (v *guideView) setReleases(title string, releases []changelog.Release) {
 	}
 }
 
-// WriteUser grava o guia do usuário em out, que já foi preparado. Os PNG
-// de mídia passam por cache; sem ele, cada um é otimizado na hora.
-func WriteUser(c *config.Config, g *content.Guide, out string, cache *media.Cache) error {
+// WriteUser grava o guia do usuário em out, que já foi preparado, e
+// devolve quantos bytes o guia usa (docs/spec.md, seção 2.1). Os PNG de
+// mídia passam por cache; sem ele, cada um é otimizado na hora.
+func WriteUser(c *config.Config, g *content.Guide, out string, cache *media.Cache) (int64, error) {
 	v := newView(c, "user_guide")
 	v.User = true
 	byID := map[string]*content.Page{}
@@ -240,8 +241,8 @@ func WriteUser(c *config.Config, g *content.Guide, out string, cache *media.Cach
 // WriteDeveloper grava o guia do desenvolvedor em out, que já foi
 // preparado (docs/spec.md, seção 8): uma entrada de menu por seção, as
 // regras de negócio num artigo só, com filtro, e as novidades técnicas
-// com o marco não publicado.
-func WriteDeveloper(c *config.Config, g *content.Guide, out string, cache *media.Cache) error {
+// com o marco não publicado. Devolve quantos bytes o guia usa.
+func WriteDeveloper(c *config.Config, g *content.Guide, out string, cache *media.Cache) (int64, error) {
 	v := newView(c, "developer_guide")
 	v.Mermaid = true
 	for _, s := range g.Sections {
@@ -280,8 +281,9 @@ func WriteDeveloper(c *config.Config, g *content.Guide, out string, cache *media
 }
 
 // writeGuide grava o HTML, os dados, o tema, os recursos embutidos e a
-// mídia de um guia. guide é "user" ou "developer".
-func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide string, vendor [][2]string, cache *media.Cache) error {
+// mídia de um guia, e devolve a soma dos bytes gravados para ele. guide
+// é "user" ou "developer".
+func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide string, vendor [][2]string, cache *media.Cache) (int64, error) {
 	if len(v.Articles) > 0 {
 		v.Home = v.Articles[0].ID
 	}
@@ -300,11 +302,11 @@ func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide stri
 
 	var html bytes.Buffer
 	if err := guideTemplate.Execute(&html, v); err != nil {
-		return fmt.Errorf("não foi possível montar o HTML: %v", err)
+		return 0, fmt.Errorf("não foi possível montar o HTML: %v", err)
 	}
 	dataJS, err := dataScript(data)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	theme := fmt.Sprintf(":root {\n  --gb-primary: %s;\n  --gb-on-primary: %s;\n  --gb-accent: %s;\n}\n",
 		c.Product.Colors.Primary, textOn(c.Product.Colors.Primary), c.Product.Colors.Accent)
@@ -327,17 +329,19 @@ func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide stri
 	for _, f := range embedded {
 		body, err := assets.ReadFile("assets/" + f[0])
 		if err != nil {
-			return err
+			return 0, err
 		}
 		files = append(files, struct {
 			name string
 			body []byte
 		}{f[1], body})
 	}
+	var size int64
 	for _, f := range files {
 		if err := writeFile(filepath.Join(out, filepath.FromSlash(f.name)), f.body); err != nil {
-			return err
+			return 0, err
 		}
+		size += int64(len(f.body))
 	}
 	used := append([]string(nil), g.Media...)
 	if c.Product.Logo != "" {
@@ -346,7 +350,8 @@ func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide stri
 	if cache == nil {
 		cache = media.NewCache()
 	}
-	return copyMedia(c.Dir, out, used, c.Product.Logo, cache)
+	n, err := copyMedia(c.Dir, out, used, c.Product.Logo, cache)
+	return size + n, err
 }
 
 // dataScript serializa os dados com json.Marshal, que escapa <, >, &,
@@ -376,10 +381,15 @@ func writeFile(name string, body []byte) error {
 	return nil
 }
 
+// maxMediaWorkers limita as imagens otimizadas ao mesmo tempo: cada
+// captura grande ocupa dezenas de megabytes durante a quantização, e o
+// serve costuma rodar em container com limite de memória (ADR 0015).
+const maxMediaWorkers = 4
+
 // copyMedia copia os arquivos do projeto para out/media/ (docs/spec.md,
 // seção 9.4). Os PNG, fora o logo, são otimizados em paralelo; a
-// gravação segue a ordem dos caminhos.
-func copyMedia(projectDir, out string, files []string, logo string, cache *media.Cache) error {
+// gravação segue a ordem dos caminhos. Devolve a soma dos bytes gravados.
+func copyMedia(projectDir, out string, files []string, logo string, cache *media.Cache) (int64, error) {
 	sort.Strings(files)
 	files = slices.Compact(files)
 	type result struct {
@@ -388,7 +398,7 @@ func copyMedia(projectDir, out string, files []string, logo string, cache *media
 	}
 	results := make([]chan result, len(files))
 	work := make(chan int)
-	for range min(runtime.GOMAXPROCS(0), len(files)) {
+	for range min(runtime.GOMAXPROCS(0), maxMediaWorkers, len(files)) {
 		go func() {
 			for i := range work {
 				rel := files[i]
@@ -410,6 +420,7 @@ func copyMedia(projectDir, out string, files []string, logo string, cache *media
 		close(work)
 	}()
 	var first error
+	var size int64
 	for i, rel := range files {
 		r := <-results[i]
 		if first != nil {
@@ -420,8 +431,9 @@ func copyMedia(projectDir, out string, files []string, logo string, cache *media
 			continue
 		}
 		first = writeFile(filepath.Join(out, "media", filepath.FromSlash(path.Clean(rel))), r.body)
+		size += int64(len(r.body))
 	}
-	return first
+	return size, first
 }
 
 // textOn escolhe a cor de texto com mais contraste sobre bg (#rrggbb),

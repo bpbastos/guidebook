@@ -98,7 +98,11 @@ cores.
 Sem dependência nova; o quantizador fica dentro do teto de Go de
 ~5.000 linhas ([ADR 0014](0014-go-code-ceiling.md)). O `build` fica
 mais lento com muitas capturas; o paralelismo por arquivo e o cache
-do `serve` por SHA-256 compensam. A memória cresce com o paralelismo:
-cerca de 40 MB por captura grande em processamento. A otimização regrava o PNG e
+do `serve` por SHA-256 compensam. A memória cresce com o paralelismo,
+cerca de 40 MB por captura grande em processamento. Por isso o
+`copyMedia` otimiza no máximo 4 imagens ao mesmo tempo, mesmo com mais
+núcleos: o `serve` costuma rodar em container com limite de memória, e
+o `check` também otimiza para medir. Com o limite, o pico medido nas 12
+amostras caiu de ~300 MB para 168 a 180 MB, no mesmo tempo (0,8 s). A otimização regrava o PNG e
 descarta os blocos auxiliares dele, como perfil de cor e texto. O
 `check` faz a mesma otimização para informar o tamanho exato.

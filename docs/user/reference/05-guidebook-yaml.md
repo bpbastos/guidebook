@@ -67,8 +67,10 @@ ui:
 | `user.blocked_prefix` | começo dos títulos do índice de bloqueios |
 | `user.profiles` | perfis de "Comece por aqui", cada um com a trilha dele |
 | `user.videos` | manifesto e lista das tarefas com vídeo |
+| `user.max_size_mib` | teto opcional do guia do usuário, em MiB, inteiro maior que 0 |
 | `developer.repository_url` | endereço para links de arquivos que não são fonte do guia |
 | `developer.sections` | fontes de cada seção do guia do desenvolvedor |
+| `developer.max_size_mib` | teto opcional do guia do desenvolvedor, em MiB, inteiro maior que 0 |
 | `ui` | troca de qualquer texto da interface |
 
 Os dois guias são opcionais, mas pelo menos um precisa existir. Um

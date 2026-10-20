@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -315,6 +317,102 @@ func TestVersionString(t *testing.T) {
 	for _, tt := range tests {
 		if got := versionString(tt.ldflags, tt.info); got != tt.want {
 			t.Errorf("versionString(%q, %v) = %q; esperava %q", tt.ldflags, tt.info, got, tt.want)
+		}
+	}
+}
+
+// sizeLine acha a linha de tamanho de um guia e devolve os bytes.
+var sizeLine = regexp.MustCompile(`(?m)^(build|check): guia (do usuário|do desenvolvedor) com ([\d.]+) bytes \((\d+,\d) MiB\)$`)
+
+func sizes(t *testing.T, stdout string) map[string]int64 {
+	t.Helper()
+	got := map[string]int64{}
+	for _, m := range sizeLine.FindAllStringSubmatch(stdout, -1) {
+		n, err := strconv.ParseInt(strings.ReplaceAll(m[3], ".", ""), 10, 64)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got[m[2]] = n
+	}
+	return got
+}
+
+// TestReportedSize: check e build informam o mesmo tamanho, que é a
+// soma dos arquivos que o build grava para o guia (docs/spec.md, seção
+// 2.1).
+func TestReportedSize(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "out")
+	code, built, stderr := runCLI("build", "-config", example, "-out", out, "-guide", "user")
+	if code != 0 {
+		t.Fatalf("build: código %d\n%s", code, stderr)
+	}
+	code, checked, stderr := runCLI("check", "-config", example, "-guide", "user")
+	if code != 0 {
+		t.Fatalf("check: código %d\n%s", code, stderr)
+	}
+	b, c := sizes(t, built)["do usuário"], sizes(t, checked)["do usuário"]
+	if b == 0 || b != c {
+		t.Fatalf("build informou %d e check %d\nbuild: %s\ncheck: %s", b, c, built, checked)
+	}
+	var sum int64
+	filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && d.Name() != ".guidebook-output" {
+			info, _ := d.Info()
+			sum += info.Size()
+		}
+		return nil
+	})
+	if b != sum {
+		t.Errorf("informou %d bytes; o out/ tem %d", b, sum)
+	}
+	if !strings.HasSuffix(strings.TrimSpace(checked), "check: nenhum problema encontrado") {
+		t.Errorf("a linha final do check deveria vir por último: %q", checked)
+	}
+
+	// Com os dois guias, uma linha para cada.
+	_, both, _ := runCLI("check", "-config", example)
+	if s := sizes(t, both); len(s) != 2 || s["do usuário"] != b {
+		t.Errorf("check com os dois guias: %v\n%s", s, both)
+	}
+}
+
+func TestFormatSize(t *testing.T) {
+	for n, want := range map[int64]string{
+		0:        "0 bytes (0,0 MiB)",
+		999:      "999 bytes (0,0 MiB)",
+		1048576:  "1.048.576 bytes (1,0 MiB)",
+		9876543:  "9.876.543 bytes (9,4 MiB)",
+		12345678: "12.345.678 bytes (11,8 MiB)",
+	} {
+		if got := formatSize(n); got != want {
+			t.Errorf("formatSize(%d) = %q; esperava %q", n, got, want)
+		}
+	}
+}
+
+// TestSizeCeiling: guia acima de max_size_mib é erro de conteúdo, com o
+// tamanho e o limite; as linhas de tamanho saem mesmo assim.
+func TestSizeCeiling(t *testing.T) {
+	p := writeConfig(t, "version: 1\nproduct:\n  name: P\nuser:\n  dir: docs/user\n  max_size_mib: 1\n")
+	dir := filepath.Dir(p)
+	big := make([]byte, 1100*1024)
+	for i := range big {
+		big[i] = byte(i * 7919 >> 3)
+	}
+	os.MkdirAll(filepath.Join(dir, "docs", "user", "media"), 0o755)
+	os.WriteFile(filepath.Join(dir, "docs", "user", "media", "foto.jpg"), big, 0o644)
+	os.WriteFile(filepath.Join(dir, "docs", "user", "tasks", "a.md"), []byte("# A\n\n![Foto](../media/foto.jpg)\n"), 0o644)
+
+	for _, cmd := range [][]string{{"check"}, {"build", "-out", filepath.Join(t.TempDir(), "out")}} {
+		code, stdout, stderr := runCLI(append(cmd, "-config", p)...)
+		if code != 1 {
+			t.Errorf("%s: código %d; esperava 1\n%s", cmd[0], code, stderr)
+		}
+		if !regexp.MustCompile(`guidebook\.yaml: user\.max_size_mib: guia do usuário com 1,\d MiB \(limite: 1 MiB\)`).MatchString(stderr) {
+			t.Errorf("%s: stderr sem o teto:\n%s", cmd[0], stderr)
+		}
+		if len(sizes(t, stdout)) != 1 {
+			t.Errorf("%s: stdout sem a linha de tamanho:\n%s", cmd[0], stdout)
 		}
 	}
 }

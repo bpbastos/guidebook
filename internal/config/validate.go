@@ -49,9 +49,11 @@ func (v *validator) validate() {
 	}
 	if c.User != nil {
 		v.user(c.User)
+		v.maxSize("user.max_size_mib", c.User.MaxSizeMiB)
 	}
 	if c.Developer != nil {
 		v.developer(c.Developer)
+		v.maxSize("developer.max_size_mib", c.Developer.MaxSizeMiB)
 	}
 
 	keys := make([]string, 0, len(c.UI))
@@ -73,6 +75,13 @@ func (v *validator) validate() {
 				v.report(field, "falta o marcador %s", ph)
 			}
 		}
+	}
+}
+
+// maxSize confere o teto opcional de um guia (docs/spec.md, seção 2.1).
+func (v *validator) maxSize(field string, n *int) {
+	if n != nil && *n <= 0 {
+		v.report(field, "deve ser um inteiro maior que 0")
 	}
 }
 

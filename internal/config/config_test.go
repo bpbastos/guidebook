@@ -171,6 +171,9 @@ func TestProblems(t *testing.T) {
 		{"ui vazia", minimal + "ui:\n  close: ''\n", nil, "ui.close", "não pode ficar vazio"},
 		{"ui sem marcador", minimal + "ui:\n  slide_of: Slide {n}\n", nil, "ui.slide_of", "{total}"},
 		{"nenhum guia", "version: 1\nproduct:\n  name: X\n", nil, "user", "defina user, developer ou os dois"},
+		{"teto zero", minimal + "  max_size_mib: 0\n", nil, "user.max_size_mib", "maior que 0"},
+		{"teto negativo", minimal + "developer:\n  max_size_mib: -3\n  sections:\n    overview:\n      sources: [a.md]\n", map[string]string{"a.md": "# A\n"}, "developer.max_size_mib", "maior que 0"},
+		{"teto fracionário", minimal + "  max_size_mib: 1.5\n", nil, "user.max_size_mib", "número inteiro"},
 	}
 
 	for _, tt := range tests {
