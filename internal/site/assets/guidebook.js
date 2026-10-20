@@ -11,6 +11,7 @@
   var dialog = doc.querySelector(".gb-dialog");
   var videoDialog = doc.querySelector(".gb-video-dialog");
   var dialogBody = dialog.querySelector(".gb-dialog-body");
+  var fullLink = dialog.querySelector(".gb-open-full"); // só no guia do usuário
   var backButtons = Array.prototype.slice.call(doc.querySelectorAll(".gb-back"));
   var baseTitle = doc.title;
 
@@ -28,8 +29,8 @@
     return Boolean(d && d.open);
   }
 
-  // Pilha do "Voltar para onde eu estava": cada navegação por link de
-  // tarefa guarda o ponto de origem; voltar desfaz uma por vez.
+  // Pilha do "Voltar para onde eu estava": cada navegação por link
+  // (menu fora) guarda o ponto de origem; voltar desfaz uma por vez.
   var backStack = [];
   var returning = null;
   var dialogOpener = null;
@@ -82,6 +83,11 @@
 
     var back = returning;
     returning = null;
+    // O botão Voltar muda a altura do cabeçalho em tela estreita: ele
+    // aparece ou some antes de rolar.
+    backButtons.forEach(function (b) {
+      b.hidden = backStack.length === 0;
+    });
     if (presenting) {
       loadSlides(article);
       showSlide(back && back.slide !== null ? back.slide : slideOf(el));
@@ -96,9 +102,6 @@
       heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
     }
-    backButtons.forEach(function (b) {
-      b.hidden = backStack.length === 0;
-    });
   }
 
   // section copia o conteúdo apontado para o diálogo: a página inteira
@@ -120,7 +123,29 @@
         frag.appendChild(n.cloneNode(true));
       }
     }
-    renameIDs(frag, "--dialog");
+    return frag;
+  }
+
+  // intro copia a tarefa ou o tutorial para o diálogo quando o link não
+  // tem âncora: o título e o texto antes do primeiro "## "; sem texto
+  // antes dele, também a primeira seção (ADR 0019).
+  function intro(article) {
+    var frag = doc.createDocumentFragment();
+    var text = false;
+    var sections = 0;
+    var blocks = article.querySelectorAll(":scope > .gb-slide > *");
+    for (var i = 0; i < blocks.length; i++) {
+      var n = blocks[i];
+      if (n.tagName === "H2") {
+        if (text || sections > 0) {
+          break;
+        }
+        sections++;
+      } else if (!/^(H1|HR)$/.test(n.tagName) && !n.classList.contains("gb-video")) {
+        text = true;
+      }
+      frag.appendChild(n.cloneNode(true));
+    }
     return frag;
   }
 
@@ -147,12 +172,27 @@
     return next && next.firstElementChild && next.firstElementChild.tagName === "HR" ? next.firstElementChild : null;
   }
 
-  function openDialog(hash, opener) {
+  // openDialog mostra o destino do link no diálogo. Com page (tarefa ou
+  // tutorial), aparece "Abrir a página inteira". Link dentro do diálogo
+  // troca o conteúdo; o foco volta ao link da página ao fechar.
+  function openDialog(hash, opener, page) {
     var el = element(hash);
     if (!el) {
       return;
     }
-    dialogBody.replaceChildren(section(el));
+    endTour();
+    var copy = page && el.classList.contains("gb-page") ? intro(el) : section(el);
+    renameIDs(copy, "--dialog");
+    // A visita guiada agiria sobre a página de trás; ficam a captura e
+    // a lista de pontos.
+    Array.prototype.forEach.call(copy.querySelectorAll(".gb-tour"), function (b) {
+      b.hidden = true;
+    });
+    dialogBody.replaceChildren(copy);
+    if (fullLink) {
+      fullLink.setAttribute("href", hash);
+      fullLink.hidden = !page;
+    }
     if (!dialog.open) {
       dialogOpener = opener;
       dialog.showModal();
@@ -166,17 +206,18 @@
       return;
     }
     var hash = a.getAttribute("href");
-    if (a.dataset.gb === "dialog") {
+    if (a.dataset.gb === "dialog" || a.dataset.gb === "page") {
       e.preventDefault();
-      openDialog(hash, a);
+      openDialog(hash, a, a.dataset.gb === "page");
       return;
     }
     if (a.dataset.gb === "nav") {
-      if (dialog.open) {
-        dialog.close();
-      }
       if (hash !== location.hash) {
         backStack.push({ hash: location.hash || homeHash(), scrollY: window.scrollY, slide: presenting ? slideIndex : null });
+      }
+      if (dialog.open) {
+        dialogOpener = null; // o foco vai para o destino
+        dialog.close();
       }
     }
   });

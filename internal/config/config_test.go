@@ -98,6 +98,9 @@ func TestDefaults(t *testing.T) {
 	if got := cfg.UIText("slide_list"); got != "Lista de slides" {
 		t.Errorf("UIText(slide_list) = %q", got)
 	}
+	if got := cfg.UIText("open_full_page"); got != "Abrir a página inteira" {
+		t.Errorf("UIText(open_full_page) = %q", got)
+	}
 }
 
 func TestRulesPerGuide(t *testing.T) {
@@ -115,12 +118,15 @@ func TestRulesPerGuide(t *testing.T) {
 }
 
 func TestUIOverride(t *testing.T) {
-	cfg, problems := loadYAML(t, minimal+"ui:\n  start_here: Por onde começar\n", nil)
+	cfg, problems := loadYAML(t, minimal+"ui:\n  start_here: Por onde começar\n  open_full_page: Ver a tarefa toda\n", nil)
 	if len(problems) > 0 {
 		t.Fatal(problems)
 	}
 	if got := cfg.UIText("start_here"); got != "Por onde começar" {
 		t.Errorf("UIText = %q", got)
+	}
+	if got := cfg.UIText("open_full_page"); got != "Ver a tarefa toda" {
+		t.Errorf("UIText(open_full_page) = %q", got)
 	}
 }
 

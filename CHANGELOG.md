@@ -7,6 +7,25 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Adicionado
+
+- Texto `open_full_page` em `ui`, com o padrão "Abrir a página
+  inteira".
+
+### Modificado
+
+- Vínculo do guia do usuário para tarefa ou tutorial abre em diálogo,
+  como o glossário. Com âncora, mostra a seção; sem âncora, o começo da
+  página. O botão "Abrir a página inteira" navega e guarda o ponto de
+  origem. Os vínculos de `index.md` continuam navegando.
+- O diálogo não mostra o botão da visita guiada; a captura e a lista de
+  pontos continuam.
+
+### Corrigido
+
+- "Voltar para onde eu estava" devolve a rolagem exata também em tela
+  estreita, onde o botão muda a altura do cabeçalho.
+
 ## [0.2.0] - 2026-10-20
 
 ### Adicionado

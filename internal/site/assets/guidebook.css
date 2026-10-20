@@ -170,8 +170,10 @@ button {
   color: var(--gb-fg);
 }
 .gb-dialog::backdrop { background: rgb(0 0 0 / 45%); }
-.gb-dialog-body h1, .gb-dialog-body h2 { margin-top: 0; }
-.gb-dialog-close { display: block; margin-left: auto; }
+.gb-dialog-body > h1:first-child, .gb-dialog-body > h2:first-child { margin-top: 0; }
+/* Os botões ficam visíveis enquanto o diálogo rola. */
+.gb-dialog-actions { position: sticky; bottom: -1.2rem; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin: 1rem 0 0; padding: 0.6rem 0 1.2rem; background: var(--gb-bg); border-top: 1px solid var(--gb-border); }
+.gb-open-full { padding: 0.35rem 0.8rem; border-radius: var(--gb-radius); background: var(--gb-primary); color: var(--gb-on-primary); text-decoration: none; font-weight: 600; }
 
 /* Guia do desenvolvedor: diagramas e filtro das regras. */
 pre.mermaid { background: none; text-align: center; overflow-x: auto; }

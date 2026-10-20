@@ -252,7 +252,7 @@ No guia do usuário, o tipo do destino decide o comportamento:
 | `glossary.md#termo` | abre o termo em `<dialog>`, sem sair do slide ou da posição de leitura |
 | página de `reference/` ou `explanation/` ("veja também") | abre a página em `<dialog>` |
 | título "O sistema não me deixa..." de qualquer página ("bloqueio") | abre aquela seção em `<dialog>` |
-| página ou âncora de `tutorials/` ou `tasks/` | navega até lá e guarda o ponto de origem; aparece "Voltar para onde eu estava" |
+| página ou âncora de `tutorials/` ou `tasks/` | abre em `<dialog>`: com âncora, aquela seção; sem âncora, o título e o texto antes do primeiro `## ` (sem texto, também a primeira seção). O botão `open_full_page` navega até o destino. Em `index.md`, navega direto, como o menu ([ADR 0019](adr/0019-task-link-dialog.md)) |
 | `http:`, `https:`, `mailto:` | link comum, abre em nova aba com `rel="noopener noreferrer"` |
 | qualquer outro arquivo do projeto | erro de conteúdo |
 | outro esquema (`javascript:`, `data:`, `vbscript:`, `file:`...) | erro de conteúdo |
@@ -263,7 +263,17 @@ externa (`http:`, `https:`) é erro, porque o guia abre sem internet. A
 imagem é copiada para `media/`, com o caminho relativo ao
 `guidebook.yaml`: `docs/user/media/a.png` vira `media/docs/user/media/a.png`.
 
-"Voltar para onde eu estava" guarda página, posição de rolagem e, no
+Navegam direto, sem diálogo: o menu, "Comece por aqui", o índice "O
+sistema não me deixa..." e "O que há de novo". Também navegam os
+vínculos de `index.md`, o vínculo para a própria página e os do guia do
+desenvolvedor. No diálogo, vínculo para outra tarefa troca o conteúdo
+do mesmo diálogo, sem pilha; ao fechar, o foco volta ao link da
+página. A cópia no diálogo esconde o botão da visita guiada e mantém a
+captura e a lista de pontos. O vídeo abre por cima do diálogo.
+
+O botão `open_full_page` do diálogo, a busca e os links que navegam
+guardam o ponto de origem e mostram "Voltar para onde eu estava". Ele
+guarda página, posição de rolagem e, no
 modo apresentação, o slide. É uma pilha: voltar desfaz uma navegação
 por vez. Vive na memória da página e no histórico (`location.hash`),
 não em armazenamento do navegador.
@@ -477,6 +487,7 @@ Todos em pt-BR por padrão; qualquer um pode ser trocado em `ui`.
 | `search_no_results` | Nada encontrado |
 | `back_to_where_i_was` | Voltar para onde eu estava |
 | `close` | Fechar |
+| `open_full_page` | Abrir a página inteira |
 | `present` | Apresentar |
 | `exit_presentation` | Sair da apresentação |
 | `fullscreen` | Tela cheia |
@@ -862,8 +873,8 @@ como um documento longo.
     palco. Conteúdo mais alto que o slide reduz a escala até caber, até
     60% dela; abaixo disso, o palco rola.
   - Link de diálogo abre por cima, sem perder o slide. Link de tarefa
-    troca de página e continua apresentando; "Voltar" devolve página e
-    slide.
+    abre em diálogo; o botão Abrir a página inteira navega e continua
+    apresentando no slide do destino; "Voltar" devolve página e slide.
   - Troca de slide com transição curta de opacidade; com
     `prefers-reduced-motion: reduce`, sem transição.
   - Ao entrar, o foco vai para o palco; ao sair, volta ao botão
@@ -885,8 +896,8 @@ como um documento longo.
   - Até 20 resultados, cada um com seção, página e trecho com os termos
     destacados. Sem resultado, aparece `search_no_results`.
   - Teclado: `/` leva à busca; ↓ e ↑ escolhem o resultado; Enter abre;
-    Esc limpa. Abrir um resultado guarda o ponto de origem, como um link
-    de tarefa.
+    Esc limpa. Abrir um resultado guarda o ponto de origem, como o botão
+    Abrir a página inteira.
   - Sem JavaScript, a caixa de busca não aparece.
 - **Acessibilidade**: navegação por teclado em tudo e foco visível. O
   `<dialog>` prende o foco e o devolve ao link ao fechar. Ao trocar de
@@ -1004,6 +1015,7 @@ Nunca CDN. A versão do MiniSearch está no
 | 18 | `feat/config-output` | `user.whats_new` e `build -product-version` e `-date`; a tarefa "Integrar à CI" do guia do usuário passa a usar as duas opções |
 | 19 | `feat/writing-details` | texto de marcador opcional, âncoras compatíveis com a forja e números na contagem de palavras |
 | — | `chore/release-0.2.0` | marco 0.2.0 no CHANGELOG |
+| 20 | `feat/task-link-dialog` | vínculo para tarefa ou tutorial abre em diálogo, com o botão `open_full_page`; sai na v0.3.0 |
 
 A partir da fase 4, toda fase que muda comportamento atualiza também a
 página correspondente dos guias do guidebook (seção 13), no mesmo
@@ -1070,6 +1082,28 @@ cobre:
    Confira `/healthz`, o guia do usuário, o 404 de
    `/developer-guide.html`, uma mudança num `.md` aparecendo e o
    `docker compose stop`.
+8. **Diálogo de tarefa, o corte**, no guia do usuário do guidebook. O
+   link para uma seção de tarefa mostra só aquela seção. O link sem
+   âncora mostra o título e o texto antes do primeiro `## ` e, sem
+   texto, também a primeira seção.
+9. **Abrir a página inteira**: navega até o destino, com âncora até a
+   seção; "Voltar para onde eu estava" devolve página e rolagem. No
+   modo apresentação, a apresentação continua no slide do destino, e
+   Voltar devolve o slide. Glossário, referência, explicação e
+   bloqueio não têm o botão.
+10. **Diálogo na apresentação**: abre por cima, sem trocar de slide;
+    setas, espaço e F não mexem nos slides com o diálogo aberto; Esc
+    fecha só o diálogo.
+11. **O que continua navegando**: menu, "Comece por aqui", "O sistema
+    não me deixa...", "O que há de novo", busca e os vínculos de
+    `index.md`.
+12. **Vínculo dentro do diálogo**: para outra tarefa, troca o conteúdo
+    do mesmo diálogo; ao fechar, o foco volta ao link original.
+13. **Vídeo e visita guiada no diálogo**, em "Registrar um pedido" do
+    exemplo, aberta pelo vínculo do tutorial. O vídeo abre por cima do
+    diálogo e, ao fechar, o foco volta ao link do vídeo. O botão da
+    visita guiada não aparece; os marcadores e a lista de pontos
+    continuam.
 - O README continua curto e aponta para os guias.
 
 ## 14. Servidor e container

@@ -15,12 +15,18 @@ fica reservado. A página não pula enquanto as capturas chegam.
 
 ## Janela e navegação
 
-Um link para o glossário, para referência ou para explicação abre numa
-janela. O leitor lê o trecho e volta para onde estava, sem perder o
-lugar.
+Um link para o glossário, referência, explicação, tarefa ou tutorial
+abre numa janela. O leitor lê o trecho e volta para onde estava, sem
+perder o lugar.
 
-Um link para tarefa ou tutorial troca de página. O guia guarda o ponto
-de origem e mostra o botão "Voltar para onde eu estava".
+A janela de tarefa ou tutorial mostra a seção do link. Sem seção, mostra
+o começo da página. Ela traz o botão "Abrir a página inteira", que
+troca de página. O guia guarda o ponto de origem e mostra o botão
+"Voltar para onde eu estava". A busca faz o mesmo ao abrir um
+resultado.
+
+O menu, a página inicial, "Comece por aqui" e "O sistema não me
+deixa..." trocam de página direto.
 
 ## Busca
 
@@ -68,7 +74,8 @@ equipe numa tela grande. Cada `##` e cada `---` começa um slide novo.
 - Home e End vão ao primeiro e ao último.
 - F liga e desliga a tela cheia; Esc sai.
 
-Links continuam funcionando: o glossário abre por cima do slide, e o
+Links continuam funcionando: a janela abre por cima do slide, e
+"Abrir a página inteira" continua a apresentação na página nova. O
 "Voltar para onde eu estava" devolve também o slide. Slide muito
 cheio diminui a letra até 60%; depois disso, ele rola.
 

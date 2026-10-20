@@ -136,7 +136,7 @@ type pageData struct {
 
 // uiKeys são os textos da interface que o template usa.
 var uiKeys = []string{
-	"user_guide", "developer_guide", "back_to_where_i_was", "close", "start_here", "profile", "blocked_index", "whats_new",
+	"user_guide", "developer_guide", "back_to_where_i_was", "close", "open_full_page", "start_here", "profile", "blocked_index", "whats_new",
 	"search", "search_no_results",
 	"present", "slide_list", "slide_of", "previous", "next", "fullscreen", "exit_presentation",
 	"has_video", "rules_filter", "rules_module", "rules_all", "rules_none",
