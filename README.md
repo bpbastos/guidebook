@@ -4,6 +4,12 @@ Ferramenta em Go que gera guias interativos em HTML a partir de
 Markdown: o guia do usuário e o guia do desenvolvedor. Serve para vários
 projetos e abre sem servidor e sem internet.
 
+Para instalar, com o Go 1.27.2 ou mais novo:
+
+```sh
+go install github.com/bpbastos/guidebook/cmd/guidebook@v0.1.1
+```
+
 O próprio guidebook se documenta assim. Para gerar e abrir os guias
 dele e os do projeto de exemplo:
 
