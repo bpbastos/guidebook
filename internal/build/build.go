@@ -10,6 +10,7 @@ import (
 	"github.com/bpbastos/guidebook/internal/config"
 	"github.com/bpbastos/guidebook/internal/content"
 	"github.com/bpbastos/guidebook/internal/diag"
+	"github.com/bpbastos/guidebook/internal/media"
 	"github.com/bpbastos/guidebook/internal/output"
 	"github.com/bpbastos/guidebook/internal/rules"
 	"github.com/bpbastos/guidebook/internal/site"
@@ -29,7 +30,8 @@ type Options struct {
 	Config   string // caminho do guidebook.yaml
 	Guide    string // all, user ou developer
 	Out      string
-	UserOnly bool // só o guia do usuário, sem ler a seção developer (serve)
+	UserOnly bool         // só o guia do usuário, sem ler a seção developer (serve)
+	Media    *media.Cache // cache da otimização de imagens; sem ele, um novo por Run
 }
 
 // Result traz os problemas, ou o erro que impediu o build, e os guias

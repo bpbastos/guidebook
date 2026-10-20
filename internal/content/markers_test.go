@@ -76,7 +76,7 @@ func TestMarkersRender(t *testing.T) {
 	html := page(t, g, "tasks/a").HTML
 	for _, want := range []string{
 		`<figure class="gb-shot" id="gb-shot-tasks-a-1">`,
-		`<img src="media/docs/user/media/tela.png" alt="Tela de novo pedido" width="640" height="400" aria-describedby="gb-shot-tasks-a-1-points">`,
+		`<img src="media/docs/user/media/tela.png" alt="Tela de novo pedido" width="640" height="400" loading="lazy" decoding="async" aria-describedby="gb-shot-tasks-a-1-points">`,
 		`<button type="button" class="gb-marker" data-n="1" data-x="0.125" data-y="0.2" aria-label="1. Campo Cliente" hidden>1</button>`,
 		`<button type="button" class="gb-marker" data-n="3" data-x="0.91" data-y="0.92" aria-label="3. Botão Salvar" hidden>3</button>`,
 		`<button type="button" class="gb-tour" hidden>Visita guiada</button>`,
@@ -112,7 +112,7 @@ func TestImageWithoutMarkersIsPlain(t *testing.T) {
 	if len(problems) > 0 {
 		t.Fatal(problems)
 	}
-	if html := page(t, g, "tasks/a").HTML; !strings.Contains(html, `<p><img src="media/docs/user/media/tela.png" alt="Tela"></p>`) {
+	if html := page(t, g, "tasks/a").HTML; !strings.Contains(html, `<p><img src="media/docs/user/media/tela.png" alt="Tela" width="640" height="400" loading="lazy" decoding="async"></p>`) {
 		t.Errorf("imagem sem marcadores deveria sair comum:\n%s", html)
 	}
 }
@@ -194,6 +194,26 @@ func TestMarkerLinkAndInvalidJSON(t *testing.T) {
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("esperava %q; veio:\n%s", want, got)
+		}
+	}
+}
+
+func TestImageDimensions(t *testing.T) {
+	g, problems := shotProject(t, "![Foto](../media/foto.jpg) ![Desenho](../media/d.gif)", map[string]string{
+		"docs/user/media/foto.jpg": picture(t, "jpeg", 320, 200),
+		"docs/user/media/d.gif":    picture(t, "gif", 10, 10),
+	})
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	html := page(t, g, "tasks/a").HTML
+	for _, want := range []string{
+		`<img src="media/docs/user/media/foto.jpg" alt="Foto" width="320" height="200" loading="lazy" decoding="async">`,
+		// Só PNG e JPEG levam as dimensões (docs/spec.md, seção 9.4).
+		`<img src="media/docs/user/media/d.gif" alt="Desenho" loading="lazy" decoding="async">`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("HTML sem %q:\n%s", want, html)
 		}
 	}
 }

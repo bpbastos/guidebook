@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
 	"net"
 	"net/http"
@@ -480,5 +483,38 @@ func TestDeveloperOnlyRefused(t *testing.T) {
 	_, err := New(config, t.TempDir(), io.Discard)
 	if err == nil || !strings.Contains(err.Error(), "guidebook.yaml: user: o serve só serve o guia do usuário; defina a seção user") {
 		t.Errorf("New = %v; esperava recusa por falta do guia do usuário", err)
+	}
+}
+
+// TestMediaCache: o PNG que não mudou não é otimizado de novo a cada
+// build (docs/spec.md, seção 9.4).
+func TestMediaCache(t *testing.T) {
+	config := project(t, "# A\n\n![Tela](../media/tela.png)\n")
+	img := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+	for i := range img.Pix {
+		img.Pix[i] = uint8(i)
+	}
+	img.SetNRGBA(0, 0, color.NRGBA{A: 255})
+	var b bytes.Buffer
+	png.Encode(&b, img)
+	dir := filepath.Join(filepath.Dir(config), "docs", "user", "media")
+	os.MkdirAll(dir, 0o755)
+	if err := os.WriteFile(filepath.Join(dir, "tela.png"), b.Bytes(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := newServer(t, config)
+	s.Refresh()
+	edit(t, config, "# A\n\nOutro texto.\n\n![Tela](../media/tela.png)\n")
+	if !s.Refresh() {
+		t.Fatal("a mudança na página deveria fazer build")
+	}
+	if code := get(t, s, "GET", "/media/docs/user/media/tela.png").Code; code != http.StatusOK {
+		t.Fatalf("imagem deu %d", code)
+	}
+	if s.opts.Media == nil {
+		t.Fatal("o serve não guarda cache de mídia entre builds")
+	}
+	if n := s.opts.Media.Misses(); n != 1 {
+		t.Errorf("otimizou %d vezes em dois builds; esperava 1", n)
 	}
 }
