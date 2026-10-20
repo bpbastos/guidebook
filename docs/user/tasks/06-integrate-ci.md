@@ -39,7 +39,7 @@ guides:
         go-version: "1.27.2"
 
     - name: instalar o guidebook
-      run: go install github.com/bpbastos/guidebook/cmd/guidebook@v0.2.0
+      run: go install github.com/bpbastos/guidebook/cmd/guidebook@v0.3.0
 
     # O e2e do projeto grava capturas, marcadores e vídeos em docs/user/media/.
     - name: e2e

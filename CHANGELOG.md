@@ -7,6 +7,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+## [0.3.0] - 2026-10-20
+
 ### Adicionado
 
 - Texto `open_full_page` em `ui`, com o padrão "Abrir a página
