@@ -889,9 +889,9 @@ páginas e posters de vídeo.
 - PNG com mais cores é quantizado para uma paleta de 256 cores, com
   alfa. O quantizador é código próprio (median cut ou equivalente), só
   com a biblioteca padrão.
-- O pontilhado (Floyd-Steinberg de `image/draw`) só entra se as
-  amostras da fase 15 mostrarem texto mais legível com ele. A decisão
-  e os números ficam no ADR 0015.
+- Sem pontilhado: nas amostras da fase 15, o Floyd-Steinberg não
+  deixou o texto mais legível e aumentou o arquivo. Os números ficam no
+  ADR 0015.
 - Se o resultado não for menor que o original, sai o original, byte a
   byte.
 - JPEG, vídeos e o logo são copiados como vieram. PNG com 16 bits por

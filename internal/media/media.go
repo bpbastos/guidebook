@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"image"
 	"image/color"
-	"image/draw"
 	"image/png"
 	"slices"
 	"sync"
@@ -22,12 +21,6 @@ var pngSignature = []byte("\x89PNG\r\n\x1a\n")
 // Optimize devolve o PNG otimizado ou, quando o resultado não fica menor
 // ou a entrada não é PNG de 8 bits, a própria entrada.
 func Optimize(data []byte) []byte {
-	return optimize(data, false)
-}
-
-// optimize faz o trabalho de Optimize; dither liga o pontilhado de
-// Floyd-Steinberg na quantização.
-func optimize(data []byte, dither bool) []byte {
 	if !bytes.HasPrefix(data, pngSignature) {
 		return data
 	}
@@ -56,17 +49,11 @@ func optimize(data []byte, dither bool) []byte {
 		}
 	} else {
 		out.Palette = quantize(distinct, counts)
-		if dither {
-			draw.FloydSteinberg.Draw(out, src.Rect, src, src.Rect.Min)
-		} else {
-			index = nearest(out.Palette, distinct)
-		}
+		index = nearest(out.Palette, distinct)
 	}
-	if index != nil {
-		for i, k := range keys {
-			j, _ := slices.BinarySearch(distinct, k)
-			out.Pix[i] = index[j]
-		}
+	for i, k := range keys {
+		j, _ := slices.BinarySearch(distinct, k)
+		out.Pix[i] = index[j]
 	}
 	var b bytes.Buffer
 	if err := (&png.Encoder{CompressionLevel: png.BestCompression}).Encode(&b, out); err != nil || b.Len() >= len(data) {
