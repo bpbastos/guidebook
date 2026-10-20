@@ -302,3 +302,9 @@ var (
 	colorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 	idRe    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 )
+
+// LoadNoMedia é o Load do "check -no-media" (docs/spec.md, seção 2.2):
+// o manifesto de vídeos pode faltar; as regras de caminho continuam.
+func LoadNoMedia(path string) (*Config, diag.List) {
+	return load(path, false)
+}

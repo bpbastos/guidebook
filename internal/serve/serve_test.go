@@ -518,3 +518,21 @@ func TestMediaCache(t *testing.T) {
 		t.Errorf("otimizou %d vezes em dois builds; esperava 1", n)
 	}
 }
+
+// TestWarningIsNotFailure: aviso de mídia sem uso vai para o log, e o
+// build continua bom (docs/spec.md, seção 2.4).
+func TestWarningIsNotFailure(t *testing.T) {
+	config := project(t, "# A\n")
+	dir := filepath.Join(filepath.Dir(config), "docs", "user", "media")
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(filepath.Join(dir, "sobra.txt"), []byte("x"), 0o644)
+	s, log := newServer(t, config)
+	s.Refresh()
+	w := get(t, s, "GET", "/healthz")
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"status":"ok"`) {
+		t.Errorf("healthz = %d %s; aviso não é falha", w.Code, w.Body.String())
+	}
+	if !strings.Contains(log.String(), "aviso: "+filepath.Join(dir, "sobra.txt")+": mídia sem uso") {
+		t.Errorf("o log deveria trazer o aviso:\n%s", log.String())
+	}
+}

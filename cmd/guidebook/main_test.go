@@ -416,3 +416,98 @@ func TestSizeCeiling(t *testing.T) {
 		}
 	}
 }
+
+// project grava os arquivos (caminho relativo → conteúdo) e devolve o
+// caminho do guidebook.yaml.
+func project(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for name, body := range files {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return filepath.Join(dir, "guidebook.yaml")
+}
+
+const videoConfig = "version: 1\nproduct:\n  name: P\nuser:\n  dir: docs/user\n  videos:\n    manifest: docs/user/media/videos/manifest.json\n    tasks: [tasks/a]\n"
+
+// TestCheckNoMedia: sem as mídias do e2e, o check -no-media passa, sem
+// gerar os guias; as regras de escrita e de caminho continuam
+// (docs/spec.md, seção 2.2).
+func TestCheckNoMedia(t *testing.T) {
+	p := project(t, map[string]string{
+		"guidebook.yaml":       videoConfig,
+		"docs/user/tasks/a.md": "# A\n\n![Tela](../media/tela.png)\n\n1. Passo.\n",
+	})
+	code, stdout, stderr := runCLI("check", "-config", p, "-no-media")
+	if code != 0 || stderr != "" {
+		t.Fatalf("código %d; esperava 0\n%s", code, stderr)
+	}
+	if len(sizes(t, stdout)) != 0 || !strings.Contains(stdout, "nenhum problema") {
+		t.Errorf("sem geração, sem linha de tamanho: %q", stdout)
+	}
+	// Sem a opção, a mídia ausente é recusada.
+	if code, _, _ := runCLI("check", "-config", p); code == 0 {
+		t.Error("o check comum deveria recusar a mídia ausente")
+	}
+	if code, _, stderr := runCLI("build", "-config", p, "-no-media"); code != 2 || !strings.Contains(stderr, "-no-media") {
+		t.Errorf("build -no-media: código %d\n%s", code, stderr)
+	}
+
+	long := strings.TrimSpace(strings.Repeat("palavra ", 30)) + "."
+	bad := project(t, map[string]string{
+		"guidebook.yaml":       videoConfig,
+		"docs/user/tasks/a.md": "# A\n\n![](../media/a.png)\n\n![Fora](../../../fora.png)\n\n![Rede](https://exemplo.com/a.png)\n\n" + long + "\n",
+	})
+	code, _, stderr = runCLI("check", "-config", bad, "-no-media")
+	if code != 1 {
+		t.Fatalf("código %d; esperava 1\n%s", code, stderr)
+	}
+	for _, want := range []string{"imagem sem texto alternativo", "sai do diretório do guidebook.yaml", "imagem externa não é permitida", "frase com 30 palavras"} {
+		if !strings.Contains(stderr, want) {
+			t.Errorf("stderr sem %q:\n%s", want, stderr)
+		}
+	}
+}
+
+// TestMediaWarnings: mídia sem uso e marcadores sem imagem usada saem
+// como aviso, sem mudar o código de saída (docs/spec.md, seção 2.4).
+func TestMediaWarnings(t *testing.T) {
+	var png bytes.Buffer
+	png.WriteString("\x89PNG\r\n\x1a\n") // não decodifica: sai como veio
+	p := project(t, map[string]string{
+		"guidebook.yaml":                       videoConfig,
+		"docs/user/tasks/a.md":                 "# A\n\n![Tela](../media/used.png)\n",
+		"docs/user/tasks/b.md":                 "# B\n",
+		"docs/user/media/used.png":             png.String(),
+		"docs/user/media/old.png":              png.String(),
+		"docs/user/media/old.markers.json":     "{}",
+		"docs/user/media/notes.txt":            "x",
+		"docs/user/media/.DS_Store":            "x",
+		"docs/user/media/videos/a.webm":        "v",
+		"docs/user/media/videos/b.webm":        "v",
+		"docs/user/media/videos/b.png":         png.String(),
+		"docs/user/media/videos/manifest.json": `{"version": 1, "videos": [{"task": "tasks/a", "file": "a.webm", "duration_seconds": 5}, {"task": "tasks/b", "file": "b.webm", "duration_seconds": 5, "poster": "b.png"}]}`,
+	})
+	media := filepath.Join(filepath.Dir(p), "docs", "user", "media")
+	want := "aviso: " + filepath.Join(media, "notes.txt") + ": mídia sem uso\n" +
+		"aviso: " + filepath.Join(media, "old.png") + ": mídia sem uso\n" +
+		"aviso: " + filepath.Join(media, "videos", "b.png") + ": mídia sem uso\n" +
+		"aviso: " + filepath.Join(media, "videos", "b.webm") + ": mídia sem uso\n" +
+		"aviso: " + filepath.Join(media, "old.markers.json") + ": marcadores sem imagem usada\n"
+	for _, args := range [][]string{{"check"}, {"build", "-out", filepath.Join(t.TempDir(), "out")}} {
+		code, _, stderr := runCLI(append(args, "-config", p)...)
+		if code != 0 {
+			t.Errorf("%s: código %d; aviso não muda o código\n%s", args[0], code, stderr)
+		}
+		if stderr != want {
+			t.Errorf("%s: stderr =\n%s\nesperava\n%s", args[0], stderr, want)
+		}
+	}
+	if _, _, stderr := runCLI("check", "-config", p, "-no-media"); stderr != "" {
+		t.Errorf("-no-media não lê mídia e não avisa:\n%s", stderr)
+	}
+}
