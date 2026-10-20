@@ -7,20 +7,9 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
-### Modificado
-
-- Âncoras dos títulos pela regra do GitHub: acentos mantidos,
-  pontuação fora, espaço vira hífen sem juntar e repetição com `-1`,
-  `-2`. O vínculo com trecho aceita também a forma do GitLab e o
-  percent-encoding. Mudança incompatível: vínculo na forma antiga, sem
-  acento, passa a ser recusado pelo `check`.
-- Número com ponto ou vírgula entre os dígitos, como `1.234,56`, conta
-  como uma palavra só no limite de frase.
+## [0.2.0] - 2026-10-20
 
 ### Adicionado
-
-- `markers[].text` opcional: sem ele, o marcador usa o texto do item
-  da lista.
 
 - O `build` otimiza os PNG de mídia: paleta exata até 256 cores e, com
   mais cores, redução para 256 por quantizador próprio. Fica o original
@@ -42,8 +31,24 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `-product-version` e `-date` no `build` e no `check`: versão do
   produto e data da geração no rodapé dos dois guias, sem ler o
   relógio. Textos novos `product_version` e `generated_on` em `ui`.
+- `markers[].text` opcional: sem ele, o marcador usa o texto do item
+  da lista.
 - Tarefa "Integrar à CI" no guia do usuário. A CI do guidebook gera os
   próprios guias e os guarda como artefato.
+
+### Modificado
+
+- Âncoras dos títulos pela regra do GitHub: acentos mantidos,
+  pontuação fora, espaço vira hífen sem juntar e repetição com `-1`,
+  `-2`. O vínculo com trecho aceita também a forma do GitLab e o
+  percent-encoding.
+- Mudança incompatível: vínculo com trecho na forma antiga, sem acento,
+  passa a ser recusado pelo `check`, com `arquivo:linha`. Para corrigir,
+  troque o trecho pela âncora nova, com os acentos do título:
+  `#codigos-de-saida` vira `#códigos-de-saída`. Título repetido passa
+  de `-2` para `-1`.
+- Número com ponto ou vírgula entre os dígitos, como `1.234,56`, conta
+  como uma palavra só no limite de frase.
 
 ## [0.1.1] - 2026-10-20
 
