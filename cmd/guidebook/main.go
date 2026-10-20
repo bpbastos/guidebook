@@ -203,3 +203,5 @@ func translateFlagError(err error) string {
 		return "opção inválida: " + msg
 	}
 }
+
+func formatSize(n int64) string { return "" }
