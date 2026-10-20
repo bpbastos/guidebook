@@ -152,10 +152,15 @@ func (v *validator) user(u *User) {
 		v.uniqueStrings(f+".start_here", p.StartHere, "página %q repetida na trilha")
 	}
 
-	if len(u.Videos.Tasks) > 0 && u.Videos.Manifest == "" {
+	switch {
+	case len(u.Videos.Tasks) > 0 && u.Videos.Manifest == "" && !v.c.NoMedia:
 		v.report("user.videos.manifest", "obrigatório quando há user.videos.tasks")
-	}
-	if u.Videos.Manifest != "" {
+	case u.Videos.Manifest != "" && v.c.NoMedia:
+		// O manifesto vem do e2e: no check -no-media, só o caminho conta.
+		if p, ok := v.path("user.videos.manifest", u.Videos.Manifest); ok {
+			u.Videos.Manifest = p
+		}
+	case u.Videos.Manifest != "":
 		if p, ok := v.file("user.videos.manifest", u.Videos.Manifest); ok {
 			u.Videos.Manifest = p
 		}

@@ -460,7 +460,7 @@ func TestCheckNoMedia(t *testing.T) {
 	long := strings.TrimSpace(strings.Repeat("palavra ", 30)) + "."
 	bad := project(t, map[string]string{
 		"guidebook.yaml":       videoConfig,
-		"docs/user/tasks/a.md": "# A\n\n![](../media/a.png)\n\n![Fora](../../../fora.png)\n\n![Rede](https://exemplo.com/a.png)\n\n" + long + "\n",
+		"docs/user/tasks/a.md": "# A\n\n![](../media/a.png)\n\n![Fora](../../../../fora.png)\n\n![Rede](https://exemplo.com/a.png)\n\n" + long + "\n",
 	})
 	code, _, stderr = runCLI("check", "-config", bad, "-no-media")
 	if code != 1 {
