@@ -117,6 +117,7 @@ func TestUserGuideHTML(t *testing.T) {
 		`<div class="gb-video-body"></div>`,
 		`<button type="button" class="gb-video-close">Fechar</button>`,
 		`<dialog class="gb-dialog">`,
+		`<a class="gb-open-full" href="#/index" data-gb="nav" hidden>Abrir a página inteira</a>`,
 		`<div class="gb-search" hidden>`,
 		`<label for="gb-search-input" class="gb-visually-hidden">Buscar</label>`,
 		`<input type="search" id="gb-search-input" placeholder="Buscar" autocomplete="off" aria-controls="gb-search-results" data-no-results="Nada encontrado">`,
@@ -406,7 +407,7 @@ func TestDeveloperGuideHTML(t *testing.T) {
 			t.Errorf("HTML sem %q", want)
 		}
 	}
-	for _, absent := range []string{"gb-present", "gb-presentation", "gb-video-dialog", "user-data.js"} {
+	for _, absent := range []string{"gb-present", "gb-presentation", "gb-video-dialog", "gb-open-full", "user-data.js"} {
 		if strings.Contains(html, absent) {
 			t.Errorf("o guia do desenvolvedor não tem %s", absent)
 		}

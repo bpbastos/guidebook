@@ -38,10 +38,13 @@ slides melhores.
 Use links relativos comuns, como `[Fechar o dia](02-close-day.md)`. O
 destino decide o que acontece:
 
-- link para o glossário ou para referência e explicação abre numa
-  janela, sem sair da página;
-- link para tarefa ou tutorial navega até lá;
-- depois de navegar, aparece o botão "Voltar para onde eu estava".
+- link para o glossário, referência, explicação, tarefa ou tutorial abre
+  numa janela, sem sair da página;
+- na janela de tarefa ou tutorial, o botão "Abrir a página inteira"
+  navega até lá;
+- depois de navegar, aparece o botão "Voltar para onde eu estava";
+- na página inicial (`index.md`), link para tarefa ou tutorial navega
+  direto, como o menu.
 
 Veja os detalhes em [Como o guia funciona](../explanation/01-how-the-guide-works.md).
 

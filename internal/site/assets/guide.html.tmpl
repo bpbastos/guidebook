@@ -75,7 +75,9 @@
 {{- end}}
 <dialog class="gb-dialog">
 <div class="gb-dialog-body"></div>
-<button type="button" class="gb-dialog-close">{{.UI.close}}</button>
+<p class="gb-dialog-actions">
+{{- if .User}}<a class="gb-open-full" href="{{hash .Home}}" data-gb="nav" hidden>{{.UI.open_full_page}}</a>{{end -}}
+<button type="button" class="gb-dialog-close">{{.UI.close}}</button></p>
 </dialog>
 <script src="assets/minisearch.js"></script>
 <script src="assets/{{.DataFile}}"></script>

@@ -43,10 +43,13 @@ type Heading struct {
 	Anchor string
 }
 
-// Tipos de link no HTML gerado (atributo data-gb).
+// Tipos de link no HTML gerado (atributo data-gb). linkPage abre a
+// tarefa ou o tutorial em diálogo, com o botão "Abrir a página
+// inteira" (ADR 0019).
 const (
 	linkNav    = "nav"
 	linkDialog = "dialog"
+	linkPage   = "page"
 )
 
 // parsed é uma página lida, entre a primeira passada (títulos e
@@ -428,6 +431,10 @@ func (l *loader) link(from *parsed, dest string) (href, kind, problem string) {
 		return href, linkNav, ""
 	case k == KindGlossary && frag != "", k == KindReference, k == KindExplanation, target.blocked[frag]:
 		return href, linkDialog, ""
+	// A página inicial é porta de entrada, como o menu, e o vínculo para
+	// a própria página só rola até a seção.
+	case (k == KindTask || k == KindTutorial) && from.page.Kind != KindIndex && target != from:
+		return href, linkPage, ""
 	default:
 		return href, linkNav, ""
 	}

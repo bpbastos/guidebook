@@ -288,6 +288,7 @@ var uiDefaults = map[string]string{
 	"search_no_results":   "Nada encontrado",
 	"back_to_where_i_was": "Voltar para onde eu estava",
 	"close":               "Fechar",
+	"open_full_page":      "Abrir a página inteira",
 	"present":             "Apresentar",
 	"exit_presentation":   "Sair da apresentação",
 	"fullscreen":          "Tela cheia",

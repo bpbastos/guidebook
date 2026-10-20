@@ -62,7 +62,7 @@ func TestLoadExample(t *testing.T) {
 	tutorial := page(t, g, "tutorials/first-order")
 	for _, want := range []string{
 		`<a href="#/glossary/pedido" data-gb="dialog">pedido</a>`,
-		`<a href="#/tasks/register-order" data-gb="nav">Registrar um pedido</a>`,
+		`<a href="#/tasks/register-order" data-gb="page">Registrar um pedido</a>`,
 	} {
 		if !strings.Contains(tutorial.HTML, want) {
 			t.Errorf("HTML do tutorial sem %q:\n%s", want, tutorial.HTML)
@@ -133,7 +133,7 @@ func TestFragments(t *testing.T) {
 	}
 	html := page(t, g, "tasks/a").HTML
 	for _, label := range []string{"github", "gitlab", "percent"} {
-		if want := `<a href="#/tasks/b/configura%C3%A7%C3%A3o--avan%C3%A7ada" data-gb="nav">` + label + `</a>`; !strings.Contains(html, want) {
+		if want := `<a href="#/tasks/b/configura%C3%A7%C3%A3o--avan%C3%A7ada" data-gb="page">` + label + `</a>`; !strings.Contains(html, want) {
 			t.Errorf("HTML sem %q:\n%s", want, html)
 		}
 	}
@@ -189,8 +189,10 @@ func linkProject(t *testing.T, body string) (*Guide, []string) {
 	t.Helper()
 	cfg := projectFiles(t, linkConfig, map[string]string{
 		"docs/user/tasks/a.md":      "# A\n\n" + body + "\n\n## Seção local\n\nTexto.\n",
-		"docs/user/tasks/b.md":      "# B\n\n## O sistema não me deixa salvar\n\nPorque sim.\n",
+		"docs/user/tasks/b.md":      "# B\n\n## Conferir\n\nOlhe.\n\n## O sistema não me deixa salvar\n\nPorque sim.\n",
 		"docs/user/reference/r.md":  "# R\n",
+		"docs/user/tutorials/t.md":  "# T\n\n## Primeiro passo\n\nTexto.\n",
+		"docs/user/index.md":        "# Início\n\n[b](tasks/b.md), [passo](tutorials/t.md#primeiro-passo) e [r](reference/r.md).\n",
 		"docs/user/glossary.md":     "# Glossário\n\n## Pedido\n\nLista de itens.\n",
 		"docs/user/media/tela.png":  "png",
 		"docs/user/media/notas.txt": "x",
@@ -207,7 +209,10 @@ func TestLinks(t *testing.T) {
 	tests := []struct {
 		name, link, html string
 	}{
-		{"tarefa navega", "[x](b.md)", `<a href="#/tasks/b" data-gb="nav">x</a>`},
+		{"tarefa em diálogo", "[x](b.md)", `<a href="#/tasks/b" data-gb="page">x</a>`},
+		{"seção de tarefa em diálogo", "[x](b.md#conferir)", `<a href="#/tasks/b/conferir" data-gb="page">x</a>`},
+		{"tutorial em diálogo", "[x](../tutorials/t.md)", `<a href="#/tutorials/t" data-gb="page">x</a>`},
+		{"seção de tutorial em diálogo", "[x](../tutorials/t.md#primeiro-passo)", `<a href="#/tutorials/t/primeiro-passo" data-gb="page">x</a>`},
 		{"referência em diálogo", "[x](../reference/r.md)", `<a href="#/reference/r" data-gb="dialog">x</a>`},
 		{"termo do glossário em diálogo", "[x](../glossary.md#pedido)", `<a href="#/glossary/pedido" data-gb="dialog">x</a>`},
 		{"glossário sem âncora navega", "[x](../glossary.md)", `<a href="#/glossary" data-gb="nav">x</a>`},
@@ -227,6 +232,25 @@ func TestLinks(t *testing.T) {
 				t.Errorf("HTML sem %q:\n%s", tt.html, a.HTML)
 			}
 		})
+	}
+}
+
+// TestIndexLinksNavigate: a página inicial é porta de entrada, como o
+// menu; os vínculos dela para tarefa e tutorial navegam (ADR 0019).
+func TestIndexLinksNavigate(t *testing.T) {
+	g, problems := linkProject(t, "Texto.")
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	html := page(t, g, "index").HTML
+	for _, want := range []string{
+		`<a href="#/tasks/b" data-gb="nav">b</a>`,
+		`<a href="#/tutorials/t/primeiro-passo" data-gb="nav">passo</a>`,
+		`<a href="#/reference/r" data-gb="dialog">r</a>`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("HTML de index sem %q:\n%s", want, html)
+		}
 	}
 }
 
