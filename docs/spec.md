@@ -1,8 +1,9 @@
 # Especificação do guidebook
 
-Versão da especificação: 1 (fase 1). Mudanças passam por pull request e
-entram no [CHANGELOG.md](../CHANGELOG.md). Decisões com alternativa real
-ficam em [docs/adr/](adr/).
+Versão da especificação: 2 (fase 14, versão 0.2.0 do guidebook).
+Mudanças passam por pull request e entram no
+[CHANGELOG.md](../CHANGELOG.md). Decisões com alternativa real ficam em
+[docs/adr/](adr/).
 
 ## 1. Visão geral
 
@@ -24,7 +25,9 @@ sem internet.
 
 ```
 guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]
-guidebook check [-config guidebook.yaml] [-guide all|user|developer]
+                [-product-version <texto>] [-date AAAA-MM-DD]
+guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]
+                [-product-version <texto>] [-date AAAA-MM-DD]
 guidebook serve [-config guidebook.yaml] [-addr 127.0.0.1:8080] [-interval 2s]
 guidebook version
 ```
@@ -32,7 +35,10 @@ guidebook version
 - `build` valida configuração e conteúdo, aplica as regras de escrita e
   grava os guias em `-out`.
 - `check` faz as mesmas validações sem gravar nada (para o CI do
-  projeto).
+  projeto). Com `-no-media`, deixa de exigir a mídia gerada pelo e2e
+  (seção 2.2).
+- `-product-version` e `-date` levam a versão do produto e a data da
+  geração aos dois guias (seção 2.3).
 - `serve` gera e serve só o guia do usuário por HTTP, regerando
   quando a entrada muda (seção 14). O guia do desenvolvedor nunca é
   servido; `-guide` não existe no `serve`.
@@ -58,10 +64,95 @@ docs/user/tasks/register-order.md:20: HTML cru não é permitido no Markdown
 guidebook.yaml: user.profiles[1].start_here[0]: página "tasks/x" não existe
 ```
 
+Avisos não mudam o código de saída. Vão para a saída de erro, depois
+dos erros, um por linha, no formato `aviso: <arquivo>: <mensagem>`
+(seção 2.4).
+
 Segurança da saída: o `build` só apaga e regrava `-out` se o diretório
 não existir, estiver vazio ou contiver o arquivo `.guidebook-output`
 (gravado pelo próprio build). Caso contrário, recusa com código 2. Isso
 impede que `-out .` apague o projeto.
+
+### 2.1 Tamanho dos guias
+
+O `check` e o `build` informam na saída padrão o tamanho de cada guia,
+uma linha por guia, antes da linha final:
+
+```
+build: guia do usuário com 9.876.543 bytes (9,4 MiB)
+check: guia do desenvolvedor com 3.210.987 bytes (3,1 MiB)
+```
+
+- O tamanho é exato: a soma dos bytes dos arquivos que o `build` grava
+  e que o guia usa. Entram o HTML, os arquivos de `assets/` que ele
+  carrega, com as licenças deles, e os arquivos de `media/` que ele
+  cita, já otimizados (seção 9.4). O `.guidebook-output` fica fora. Um
+  arquivo usado pelos dois guias conta nos dois.
+- O `check` calcula o mesmo número que o `build` gravaria, sem gravar.
+- Bytes com separador de milhar `.`; MiB = 1.048.576 bytes, com uma
+  casa decimal, arredondada para o mais próximo.
+- Com erro de configuração ou de E/S (código 2), as linhas não saem.
+- **Teto opcional por guia**: `user.max_size_mib` e
+  `developer.max_size_mib` (seção 4.3). Guia com mais bytes que o teto
+  × 1.048.576 é erro de conteúdo (código 1), com o tamanho e o limite:
+  `guidebook.yaml: user.max_size_mib: guia do usuário com 12,3 MiB
+  (limite: 10 MiB)`.
+
+### 2.2 `check -no-media`
+
+Para a CI que roda antes do e2e, quando as mídias ainda não existem.
+Com `-no-media`, o `check` não lê nenhum arquivo de mídia e não exige:
+
+- a existência de imagens, `.markers.json`, manifesto de vídeos e
+  arquivos de vídeo e de poster;
+- o conteúdo do `.markers.json` e do manifesto, que não são lidos;
+- a ligação entre marcadores e lista numerada (seção 6.2);
+- o tamanho dos guias e o teto (seção 2.1).
+
+Continua conferindo as regras de escrita, o texto alternativo e os
+vínculos entre páginas. Confere também as regras de caminho de imagem e
+de vídeo (externo, absoluto, `../`, esquema). `user.videos.manifest`
+ausente com `user.videos.tasks` presente deixa de recusar a
+configuração; as tarefas de `user.videos.tasks` continuam precisando
+existir. Os avisos
+de mídia (seção 2.4) não saem. Sem `-no-media`, nada fica mais frouxo
+([ADR 0018](adr/0018-check-without-media.md)).
+
+`-no-media` só existe no `check`. No `build` e no `serve`, é erro de
+uso (código 2).
+
+### 2.3 Versão do produto e data
+
+- `-product-version <texto>`: texto não vazio, até 40 caracteres, sem
+  quebra de linha.
+- `-date AAAA-MM-DD`: data válida do calendário. Data inválida ou fora
+  do formato é erro de uso (código 2).
+- O `build` e o `check` aceitam as duas, com as mesmas regras. No
+  `check`, elas entram só na conta do tamanho (seção 2.1), para que o
+  número seja o mesmo do `build` com as mesmas opções.
+- As duas são opcionais e independentes. O guidebook nunca lê o
+  relógio: a data é entrada, e o determinismo continua (seção 9.2).
+- Aparecem nos dois guias, no rodapé do conteúdo, com os textos
+  `product_version` e `generated_on` (seção 4.6). A data sai como
+  DD/MM/AAAA. Sem a opção, o texto dela não aparece.
+- O `serve` não tem essas opções
+  ([ADR 0017](adr/0017-version-and-date-options.md)).
+
+### 2.4 Avisos de mídia
+
+No `check` e no `build`, sem mudar o código de saída, nesta ordem:
+
+1. arquivo dentro de `<user.dir>/media` que nenhum guia usa:
+   `aviso: docs/user/media/old.png: mídia sem uso`;
+2. `.markers.json` cuja imagem nenhuma página usa:
+   `aviso: docs/user/media/old.markers.json: marcadores sem imagem usada`.
+
+Dentro de cada grupo, em ordem de bytes do caminho. Contam como usados
+as imagens citadas pelas páginas, o `.markers.json` de imagem usada, o
+manifesto de vídeos e o vídeo e o poster das tarefas de
+`user.videos.tasks`. Vídeo do manifesto fora de `user.videos.tasks`
+conta como sem uso. Entradas que começam com `.` ficam fora, como na
+seção 3.1. O `.markers.json` de imagem não usada sai só no grupo 2.
 
 ## 3. Entrada
 
@@ -115,9 +206,25 @@ só estas:
 | imagem com `<nome>.markers.json` ao lado | guia do usuário | captura com marcadores (seção 6) |
 | `## ` e `---` | guia do usuário | limite de slide no modo apresentação |
 
-As âncoras dos títulos são geradas do texto: minúsculas, acentos
-removidos, o que não for letra ou dígito vira `-`, hífens repetidos
-colapsados. Âncora repetida na mesma página ganha `-2`, `-3`...
+As âncoras dos títulos seguem a regra do GitHub, para que o mesmo
+vínculo funcione na forja e no guia
+([ADR 0016](adr/0016-forge-compatible-anchors.md)):
+
+- o texto do título, sem marcação (o código em linha entra sem as
+  crases), em minúsculas;
+- acentos mantidos: letras, dígitos, `_`, `-` e espaço ficam; o resto
+  da pontuação sai, inclusive `/`, `.` e travessão;
+- cada espaço vira `-`, sem juntar hífens: `Pedido — novo` vira
+  `pedido--novo`;
+- âncora repetida na mesma página ganha `-1`, `-2`... na ordem em que
+  aparece.
+
+O trecho de um vínculo (`pagina.md#trecho`) é decodificado do
+percent-encoding antes de comparar. Ele casa com a âncora igual. Sem
+âncora igual, casa também na forma do GitLab, com hífens repetidos
+juntados (`pedido-novo` acha `pedido--novo`). Se a forma do GitLab casar
+com mais de uma âncora da página, é erro de conteúdo. O link gerado
+aponta sempre para a âncora do guia.
 
 ### 3.3 Links
 
@@ -184,7 +291,8 @@ aceitos em inglês (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`,
 
 - Guia do usuário ("O que há de novo"): lê `user.changelog`, mostra os
   marcos publicados, do mais novo para o mais antigo; ignora
-  `[Unreleased]`/`[Não publicado]`.
+  `[Unreleased]`/`[Não publicado]`. Com `user.whats_new: false`, o
+  arquivo não é lido nem conferido, e o artigo não existe.
 - Guia do desenvolvedor ("Novidades técnicas"): lê as fontes da seção
   `changes`; mostra também o marco não publicado.
 - Marco sem itens não aparece em nenhum dos dois guias; categoria sem
@@ -304,13 +412,16 @@ ui:                               # opcional; substitui textos padrão
 | `user` | objeto | não | sem ele, o guia do usuário não é gerado |
 | `user.dir` | caminho | sim, se `user` | diretório existente |
 | `user.changelog` | caminho | não | padrão `CHANGELOG.md`; se não existir, sem "O que há de novo" |
+| `user.whats_new` | booleano | não | padrão `true`; `false` desliga "O que há de novo" sem ler `user.changelog` |
+| `user.max_size_mib` | inteiro | não | maior que 0; teto do guia do usuário (seção 2.1) |
 | `user.blocked_prefix` | texto | não | padrão `O sistema não me deixa` |
 | `user.rules` | objeto | não | mesmo formato de `rules` |
 | `user.profiles[]` | lista | não | `id` (kebab-case, único), `name` (não vazio), `start_here` (identificadores de página existentes, sem repetição, pelo menos um) |
-| `user.videos.manifest` | caminho | se houver `tasks` | arquivo existente (seção 7) |
+| `user.videos.manifest` | caminho | se houver `tasks`, fora do `check -no-media` | arquivo existente (seção 7); no `check -no-media`, opcional e não lido |
 | `user.videos.tasks[]` | lista | não | identificadores de `tasks/` existentes; cada um precisa estar no manifesto |
 | `developer` | objeto | não | sem ele, o guia do desenvolvedor não é gerado |
 | `developer.repository_url` | URL | não | `https://`; ver seção 3.3 |
+| `developer.max_size_mib` | inteiro | não | maior que 0; teto do guia do desenvolvedor (seção 2.1) |
 | `developer.rules` | objeto | não | mesmo formato de `rules` |
 | `developer.sections.<chave>` | objeto | não | chaves da seção 8, de `overview` a `changes`; `sources` (lista de caminhos ou padrões glob, pelo menos um arquivo casado) e `title` opcional |
 | `ui.<chave>` | texto | não | chaves da seção 4.6; não vazio |
@@ -369,9 +480,11 @@ Todos em pt-BR por padrão; qualquer um pode ser trocado em `ui`.
 | `screen_points` | Pontos desta tela |
 | `user_guide` | Guia do usuário |
 | `developer_guide` | Guia do desenvolvedor |
+| `product_version` | Versão {version} |
+| `generated_on` | Gerado em {date} |
 
-Os marcadores `{n}`, `{total}` e `{min}` são obrigatórios nos textos
-que os usam; faltar um é erro de configuração.
+Os marcadores `{n}`, `{total}`, `{min}`, `{version}` e `{date}` são
+obrigatórios nos textos que os usam; faltar um é erro de configuração.
 
 ## 5. Regras de escrita
 
@@ -391,7 +504,9 @@ pelos dois guias, incluindo CHANGELOG e glossário.
      fim de cada bloco também termina a frase. Abreviação como `ex.`
      corta a frase: a regra erra para o lado de aceitar.
    - Palavra: sequência de letras ou dígitos, com hífen ou apóstrofo
-     interno (`guarda-chuva` é uma palavra).
+     interno (`guarda-chuva` é uma palavra). Dígitos separados por `.`
+     ou `,` e seguidos de dígito também são uma palavra só: `1.234,56`
+     e `3.5` contam 1.
    - A linha informada é a do início da frase; a mensagem traz as oito
      primeiras palavras, para achar a frase.
 2. **Citação proibida**: texto que casa com algum `forbidden_patterns`.
@@ -440,7 +555,7 @@ docs/user/media/register-order-1.markers.json
 | `width`, `height` | tamanho da captura em pixels; precisa bater com o arquivo |
 | `markers[].n` | inteiro, de 1 a N, sem buraco nem repetição, em ordem |
 | `markers[].x`, `markers[].y` | centro do marcador, relativo à largura e à altura (0 a 1), origem no canto superior esquerdo |
-| `markers[].text` | rótulo curto, não vazio, até 80 caracteres |
+| `markers[].text` | opcional; se presente, rótulo curto, não vazio, até 80 caracteres |
 
 Capturas aceitas: PNG e JPEG (o build lê o tamanho com a biblioteca
 padrão). Chave desconhecida, JSON inválido ou valor fora da faixa é
@@ -466,6 +581,10 @@ lista numerada. O marcador `n` corresponde ao item `n` da lista.
 - Os problemas do `.markers.json` saem mesmo quando a ligação com a
   lista falha; só a contagem depende da lista.
 - Imagem sem `.markers.json` ao lado é uma imagem comum.
+- Marcador sem `text` usa o texto do item `n` da lista: texto puro, sem
+  marcação, com os espaços juntados. Esse texto não tem limite de
+  tamanho. Na visita guiada e na lista "Pontos desta tela", os dois
+  casos aparecem iguais.
 
 ### 6.3 Comportamento
 
@@ -537,7 +656,9 @@ docs/user/media/videos/manifest.json
 
 Só as tarefas listadas em `user.videos.tasks` ganham vídeo; cada uma
 precisa estar no manifesto (senão, erro de conteúdo). Entrada do
-manifesto fora da lista é ignorada.
+manifesto fora da lista é ignorada pelo guia e conta como mídia sem uso
+nos avisos (seção 2.4). No `check -no-media`, o manifesto não é lido
+(seção 2.2).
 
 ### 7.2 Comportamento
 
@@ -607,10 +728,13 @@ Detalhes:
 - Cada diagrama é desenhado quando a página dele aparece, uma vez só:
   desenhar escondido erra o tamanho.
 - No guia do usuário, ` ```mermaid ` continua bloco de código comum.
-- Cada arquivo de seção vira uma página `<seção>/<nome do arquivo>`,
-  com o nome pela regra das âncoras (seção 3.2): `docs/adr/0001-x.md`
-  em `decisions` vira `decisions/0001-x`. Toda fonte precisa de um
-  `# ` e só um.
+- Cada arquivo de seção vira uma página `<seção>/<nome do arquivo>`.
+  O nome vem do arquivo sem `.md`, em minúsculas, sem acentos; o que não
+  for letra ou dígito vira `-`, com hífens repetidos juntados. É a regra
+  das âncoras da versão 0.1, que continua para os nomes de página
+  ([ADR 0016](adr/0016-forge-compatible-anchors.md)):
+  `docs/adr/0001-x.md` em `decisions` vira `decisions/0001-x`. Toda
+  fonte precisa de um `# ` e só um.
 - Menu: módulos e decisões viram grupo, com um item por arquivo. As
   outras seções com um arquivo só viram um item direto, com o título
   da seção; com mais arquivos, viram grupo.
@@ -643,7 +767,7 @@ out/
 │   ├── user-data.js
 │   ├── theme.css           # cores do produto, comuns aos dois guias
 │   └── developer-data.js
-└── media/                  # cópia da mídia do projeto usada pelos guias
+└── media/                  # mídia do projeto usada pelos guias (seção 9.4)
 ```
 
 Uma página HTML por guia, com navegação por `location.hash`
@@ -668,9 +792,12 @@ como um documento longo.
   binário com `go:embed`. Teste instala o guidebook por `go install` a
   partir de um módulo de verdade, sem rede. O binário instalado gera o
   projeto de exemplo ([ADR 0013](adr/0013-third-party-assets.md)).
-- **Determinismo**: mesma entrada, mesmos bytes. Sem data, hora, caminho
-  absoluto ou valor aleatório na saída; mapas sempre percorridos em
-  ordem; arquivos gravados em ordem. Teste gera duas vezes e compara.
+- **Determinismo**: mesma entrada, mesmos bytes. Sem data ou hora do
+  relógio, caminho absoluto ou valor aleatório na saída; mapas sempre
+  percorridos em ordem; arquivos gravados em ordem. A versão e a data de
+  `-product-version` e `-date` são entrada (seção 2.3). A otimização de
+  imagens também é determinística (seção 9.4). Teste gera duas vezes e
+  compara.
 - **Teto de tamanho**: o conjunto de `out/` sem `media/` tem teto
   conferido por teste, por guia, sobre o projeto de exemplo. O guia do
   usuário tem teto de 160 KiB ([ADR 0006](adr/0006-size-ceiling.md)). O
@@ -687,7 +814,8 @@ como um documento longo.
   - os quatro tipos Diátaxis, cada um com as páginas dele;
   - o glossário;
   - "O sistema não me deixa...", se houver entradas;
-  - "O que há de novo", se houver marco publicado.
+  - "O que há de novo", se houver marco publicado e `user.whats_new`
+    não for `false`.
 
   Sem `index.md`, a página inicial é a primeira do menu. Os artigos
   gerados pelo guidebook têm os identificadores `start-here`, `blocked`
@@ -748,6 +876,39 @@ como um documento longo.
   `<dialog>` prende o foco e o devolve ao link ao fechar. Ao trocar de
   página, o foco vai para o título. Texto alternativo é obrigatório em
   imagem; imagem sem ele é erro de conteúdo.
+
+### 9.4 Mídia
+
+O `build` copia para `media/` a mídia que os guias usam. Os PNG de
+mídia passam por otimização
+([ADR 0015](adr/0015-png-palette-images.md)): capturas, imagens das
+páginas e posters de vídeo.
+
+- PNG com até 256 cores distintas, contando o alfa, vira PNG com paleta
+  exata, sem perda.
+- PNG com mais cores é quantizado para uma paleta de 256 cores, com
+  alfa. O quantizador é código próprio (median cut ou equivalente), só
+  com a biblioteca padrão.
+- O pontilhado (Floyd-Steinberg de `image/draw`) só entra se as
+  amostras da fase 15 mostrarem texto mais legível com ele. A decisão
+  e os números ficam no ADR 0015.
+- Se o resultado não for menor que o original, sai o original, byte a
+  byte.
+- JPEG, vídeos e o logo são copiados como vieram.
+- Caminho, extensão e dimensões não mudam: os `.markers.json` continuam
+  batendo com a imagem.
+- O resultado é determinístico: mesma entrada, mesmos bytes, em
+  qualquer máquina e com qualquer paralelismo. Teste gera duas vezes e
+  compara.
+- O `build` pode otimizar vários arquivos ao mesmo tempo, mas grava em
+  ordem.
+- O `serve` guarda em memória o resultado de cada PNG pelo SHA-256 da
+  entrada. Assim, uma varredura que regera o guia não quantiza de novo
+  a imagem que não mudou.
+- Nos dois guias, todo `<img>` de conteúdo sai com `loading="lazy"` e
+  `decoding="async"`. PNG e JPEG saem também com `width` e `height`, as
+  dimensões do arquivo, lidas pela biblioteca padrão. Outro formato sai
+  sem as dimensões.
 
 ## 10. Bibliotecas de navegador vendorizadas
 
@@ -840,6 +1001,9 @@ próprios guias é um teste da ferramenta.
   - escrever as páginas;
   - rodar `build` e `check`;
   - integrar ao e2e de um projeto, com os formatos das seções 6 e 7;
+  - integrar à CI de um projeto. O e2e gera as mídias fora do git, e
+    o `check` e o `build` rodam no mesmo job, depois dele. Os guias,
+    com `-product-version` e `-date`, viram artefato da pipeline;
   - interpretar as recusas das regras de escrita.
 
   É uma CLI: sem capturas nem vídeos aqui. Esses recursos continuam testados
@@ -851,7 +1015,10 @@ próprios guias é um teste da ferramenta.
 - **CI**: assim que o `build` existir (fase 4), a CI roda `guidebook
   check` sobre o próprio repositório. Violação das regras de escrita na
   documentação do guidebook quebra a CI. Os documentos já existentes
-  (este inclusive) são ajustados às regras nessa fase.
+  (este inclusive) são ajustados às regras nessa fase. Desde a fase 16,
+  a CI também gera os guias do próprio guidebook. Ela os publica como
+  artefato da execução, com action fixada por SHA. Assim, o exemplo da
+  tarefa de integração à CI foi visto funcionando.
 - **Prévia**: `make preview` gera os guias do próprio guidebook em
   `out/guidebook/` e os do projeto de exemplo de `testdata/` em
   `out/example/`. No fim, imprime os caminhos `file://` dos quatro HTML.
