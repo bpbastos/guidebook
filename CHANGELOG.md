@@ -7,6 +7,16 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Adicionado
+
+- O `build` otimiza os PNG de mídia: paleta exata até 256 cores e, com
+  mais cores, redução para 256 por quantizador próprio. Fica o original
+  quando o resultado não é menor; JPEG, vídeo e logo saem como vieram.
+- Imagens do guia com `loading="lazy"`, `decoding="async"` e, em PNG e
+  JPEG, `width` e `height`.
+- O `serve` guarda as imagens otimizadas em memória e não otimiza de
+  novo a que não mudou.
+
 ## [0.1.1] - 2026-10-20
 
 ### Modificado

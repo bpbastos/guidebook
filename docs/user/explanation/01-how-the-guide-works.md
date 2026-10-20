@@ -10,6 +10,9 @@ O guia não busca nada na rede. Os dados ficam em arquivos da pasta
 
 Por isso o guia abre com dois cliques, direto do disco.
 
+As imagens carregam só quando chegam perto da tela, e o espaço delas já
+fica reservado. A página não pula enquanto as capturas chegam.
+
 ## Janela e navegação
 
 Um link para o glossário, para referência ou para explicação abre numa

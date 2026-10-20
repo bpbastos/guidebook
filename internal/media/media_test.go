@@ -184,7 +184,8 @@ func TestDeterministic(t *testing.T) {
 
 func TestKeepsOriginal(t *testing.T) {
 	// Já comprimido ao máximo, com paleta: otimizar não fica menor.
-	small := image.NewPaletted(image.Rect(0, 0, 4, 4), color.Palette{color.Black, color.White})
+	small := image.NewPaletted(image.Rect(0, 0, 4, 4), color.Palette{color.NRGBA{A: 255}, color.NRGBA{255, 255, 255, 255}})
+	small.SetColorIndex(1, 1, 1)
 	var b bytes.Buffer
 	(&png.Encoder{CompressionLevel: png.BestCompression}).Encode(&b, small)
 	var jpg bytes.Buffer
@@ -229,5 +230,61 @@ func TestCache(t *testing.T) {
 	c.Optimize(b)
 	if c.computed != 3 {
 		t.Errorf("otimizou %d vezes; esperava 3 (b saiu do cache)", c.computed)
+	}
+}
+
+// BenchmarkOptimize mede o pior caso: uma tela cheia em que quase todo
+// pixel tem cor própria.
+func BenchmarkOptimize(b *testing.B) {
+	img := image.NewNRGBA(image.Rect(0, 0, 1920, 1080))
+	seed := uint32(1)
+	for i := range img.Pix {
+		seed = seed*1664525 + 1013904223
+		img.Pix[i] = uint8(seed >> 24)
+		if i%4 == 3 {
+			img.Pix[i] = 255
+		}
+	}
+	var buf bytes.Buffer
+	png.Encode(&buf, img)
+	b.ResetTimer()
+	for b.Loop() {
+		Optimize(buf.Bytes())
+	}
+}
+
+// TestNearest: a busca com poda dá o mesmo índice que a busca em toda a
+// paleta, inclusive no empate.
+func TestNearest(t *testing.T) {
+	seed := uint32(7)
+	next := func() uint8 {
+		seed = seed*1664525 + 1013904223
+		return uint8(seed >> 24)
+	}
+	pal := make(color.Palette, 256)
+	for i := range pal {
+		pal[i] = color.NRGBA{next() &^ 7, next() &^ 7, next() &^ 7, next() | 0xf0}
+	}
+	colors := make([]uint32, 5000)
+	for i := range colors {
+		colors[i] = pixel([]uint8{next(), next(), next(), next()})
+	}
+	got := nearest(pal, colors)
+	for i, k := range colors {
+		c := keyColor(k)
+		best, want := -1, 0
+		for j, p := range pal {
+			n := p.(color.NRGBA)
+			d := 0
+			for _, x := range []int{int(c.R) - int(n.R), int(c.G) - int(n.G), int(c.B) - int(n.B), int(c.A) - int(n.A)} {
+				d += x * x
+			}
+			if best < 0 || d < best {
+				best, want = d, j
+			}
+		}
+		if int(got[i]) != want {
+			t.Fatalf("cor %v: índice %d; esperava %d", c, got[i], want)
+		}
 	}
 }

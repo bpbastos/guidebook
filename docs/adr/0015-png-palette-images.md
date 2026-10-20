@@ -39,6 +39,30 @@ vieram.
 O pontilhado (Floyd-Steinberg de `image/draw`) fica de fora, a menos
 que as amostras mostrem texto mais legível com ele.
 
+## Implementação
+
+Pacote `internal/media`, só com a biblioteca padrão:
+
+- As chaves de todos os pixels, ordenadas, dão as cores distintas e
+  quantas vezes cada uma aparece. Até 256 cores, elas são a paleta.
+- Acima disso, o median cut divide sempre o grupo de maior erro
+  quadrático. O corte fica no canal e no valor que deixam a menor soma
+  de erros dos dois lados, com os quatro canais, alfa incluído. A cor
+  de cada grupo é a média ponderada.
+- Cada cor vai para a cor mais próxima da paleta, pela distância
+  quadrática; no empate, o menor índice.
+- A paleta sai em ordem de alfa, e as cores transparentes vêm primeiro.
+  Assim o bloco de transparência do PNG fica curto.
+- A gravação usa `png.BestCompression`.
+- PNG de 16 bits por canal sai como veio, porque a paleta perderia
+  precisão.
+- O `build` otimiza os arquivos em paralelo e grava em ordem. O cache
+  por SHA-256 serve ao `serve` e aos dois guias de um mesmo `build`.
+
+Pior caso sintético, 1920×1080 com quase todo pixel de cor própria:
+cerca de 1,9 s por imagem numa máquina de 8 núcleos. Capturas reais
+têm muito menos cores.
+
 ## Medição
 
 A medir na fase 15, nas amostras de `.local/samples/`:

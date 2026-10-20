@@ -894,7 +894,11 @@ páginas e posters de vídeo.
   e os números ficam no ADR 0015.
 - Se o resultado não for menor que o original, sai o original, byte a
   byte.
-- JPEG, vídeos e o logo são copiados como vieram.
+- JPEG, vídeos e o logo são copiados como vieram. PNG com 16 bits por
+  canal também, porque a paleta tem 8 bits por canal e perderia
+  precisão. Arquivo `.png` que não decodifica sai como veio.
+- Pixel totalmente transparente conta como uma cor só: a cor por baixo
+  dele não aparece.
 - Caminho, extensão e dimensões não mudam: os `.markers.json` continuam
   batendo com a imagem.
 - O resultado é determinístico: mesma entrada, mesmos bytes, em

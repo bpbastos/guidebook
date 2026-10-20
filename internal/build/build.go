@@ -83,18 +83,21 @@ func Run(o Options) Result {
 		return Result{Status: OK}
 	}
 
+	if o.Media == nil {
+		o.Media = media.NewCache()
+	}
 	if err := output.Prepare(o.Out); err != nil {
 		return Result{Status: Usage, Err: err}
 	}
 	var r Result
 	if wantUser {
-		if err := site.WriteUser(cfg, userGuide, o.Out); err != nil {
+		if err := site.WriteUser(cfg, userGuide, o.Out, o.Media); err != nil {
 			return Result{Status: Usage, Err: err}
 		}
 		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "user-guide.html"))
 	}
 	if wantDev {
-		if err := site.WriteDeveloper(cfg, devGuide, o.Out); err != nil {
+		if err := site.WriteDeveloper(cfg, devGuide, o.Out, o.Media); err != nil {
 			return Result{Status: Usage, Err: err}
 		}
 		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "developer-guide.html"))

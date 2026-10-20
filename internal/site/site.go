@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"math"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/bpbastos/guidebook/internal/changelog"
 	"github.com/bpbastos/guidebook/internal/config"
 	"github.com/bpbastos/guidebook/internal/content"
+	"github.com/bpbastos/guidebook/internal/media"
 )
 
 //go:embed assets
@@ -171,8 +173,9 @@ func (v *guideView) setReleases(title string, releases []changelog.Release) {
 	}
 }
 
-// WriteUser grava o guia do usuário em out, que já foi preparado.
-func WriteUser(c *config.Config, g *content.Guide, out string) error {
+// WriteUser grava o guia do usuário em out, que já foi preparado. Os PNG
+// de mídia passam por cache; sem ele, cada um é otimizado na hora.
+func WriteUser(c *config.Config, g *content.Guide, out string, cache *media.Cache) error {
 	v := newView(c, "user_guide")
 	v.User = true
 	byID := map[string]*content.Page{}
@@ -231,14 +234,14 @@ func WriteUser(c *config.Config, g *content.Guide, out string) error {
 		v.Articles = append(v.Articles, article{ID: kindWhatsNew, Kind: kindWhatsNew})
 		v.Nav = append(v.Nav, navItem{ID: kindWhatsNew, Label: v.UI["whats_new"]})
 	}
-	return writeGuide(c, v, g, out, "user", nil)
+	return writeGuide(c, v, g, out, "user", nil, cache)
 }
 
 // WriteDeveloper grava o guia do desenvolvedor em out, que já foi
 // preparado (docs/spec.md, seção 8): uma entrada de menu por seção, as
 // regras de negócio num artigo só, com filtro, e as novidades técnicas
 // com o marco não publicado.
-func WriteDeveloper(c *config.Config, g *content.Guide, out string) error {
+func WriteDeveloper(c *config.Config, g *content.Guide, out string, cache *media.Cache) error {
 	v := newView(c, "developer_guide")
 	v.Mermaid = true
 	for _, s := range g.Sections {
@@ -273,12 +276,12 @@ func WriteDeveloper(c *config.Config, g *content.Guide, out string) error {
 	return writeGuide(c, v, g, out, "developer", [][2]string{
 		{"third_party/mermaid/mermaid.min.js", "assets/mermaid.min.js"},
 		{"third_party/mermaid/LICENSE", "assets/mermaid.LICENSE.txt"},
-	})
+	}, cache)
 }
 
 // writeGuide grava o HTML, os dados, o tema, os recursos embutidos e a
 // mídia de um guia. guide é "user" ou "developer".
-func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide string, vendor [][2]string) error {
+func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide string, vendor [][2]string, cache *media.Cache) error {
 	if len(v.Articles) > 0 {
 		v.Home = v.Articles[0].ID
 	}
@@ -336,11 +339,14 @@ func writeGuide(c *config.Config, v guideView, g *content.Guide, out, guide stri
 			return err
 		}
 	}
-	media := append([]string(nil), g.Media...)
+	used := append([]string(nil), g.Media...)
 	if c.Product.Logo != "" {
-		media = append(media, c.Product.Logo)
+		used = append(used, c.Product.Logo)
 	}
-	return copyMedia(c.Dir, out, media)
+	if cache == nil {
+		cache = media.NewCache()
+	}
+	return copyMedia(c.Dir, out, used, c.Product.Logo, cache)
 }
 
 // dataScript serializa os dados com json.Marshal, que escapa <, >, &,
@@ -370,36 +376,52 @@ func writeFile(name string, body []byte) error {
 	return nil
 }
 
-// copyMedia copia os arquivos do projeto para out/media/, na ordem dos
-// caminhos.
-func copyMedia(projectDir, out string, files []string) error {
+// copyMedia copia os arquivos do projeto para out/media/ (docs/spec.md,
+// seção 9.4). Os PNG, fora o logo, são otimizados em paralelo; a
+// gravação segue a ordem dos caminhos.
+func copyMedia(projectDir, out string, files []string, logo string, cache *media.Cache) error {
 	sort.Strings(files)
+	files = slices.Compact(files)
+	type result struct {
+		body []byte
+		err  error
+	}
+	results := make([]chan result, len(files))
+	work := make(chan int)
+	for range min(runtime.GOMAXPROCS(0), len(files)) {
+		go func() {
+			for i := range work {
+				rel := files[i]
+				body, err := os.ReadFile(filepath.Join(projectDir, filepath.FromSlash(rel)))
+				if err == nil && rel != logo && strings.EqualFold(path.Ext(rel), ".png") {
+					body = cache.Optimize(body)
+				}
+				results[i] <- result{body, err}
+			}
+		}()
+	}
+	for i := range results {
+		results[i] = make(chan result, 1)
+	}
+	go func() {
+		for i := range files {
+			work <- i
+		}
+		close(work)
+	}()
+	var first error
 	for i, rel := range files {
-		if i > 0 && files[i-1] == rel {
+		r := <-results[i]
+		if first != nil {
+			continue // espera os outros para não deixar goroutine presa
+		}
+		if r.err != nil {
+			first = fmt.Errorf("não foi possível ler %s: %v", rel, r.err)
 			continue
 		}
-		src, err := os.Open(filepath.Join(projectDir, filepath.FromSlash(rel)))
-		if err != nil {
-			return fmt.Errorf("não foi possível ler %s: %v", rel, err)
-		}
-		dst := filepath.Join(out, "media", filepath.FromSlash(path.Clean(rel)))
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			src.Close()
-			return fmt.Errorf("não foi possível criar %s: %v", filepath.Dir(dst), err)
-		}
-		f, err := os.Create(dst)
-		if err == nil {
-			_, err = io.Copy(f, src)
-			if cerr := f.Close(); err == nil {
-				err = cerr
-			}
-		}
-		src.Close()
-		if err != nil {
-			return fmt.Errorf("não foi possível copiar %s: %v", rel, err)
-		}
+		first = writeFile(filepath.Join(out, "media", filepath.FromSlash(path.Clean(rel))), r.body)
 	}
-	return nil
+	return first
 }
 
 // textOn escolhe a cor de texto com mais contraste sobre bg (#rrggbb),
