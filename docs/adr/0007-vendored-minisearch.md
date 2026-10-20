@@ -12,7 +12,7 @@ Minificar exigiria uma ferramenta nova.
 ## Decisão
 
 Vendorizar o `package/dist/umd/index.js` do tarball como
-`internal/site/assets/vendor/minisearch/minisearch.js`, sem mudança. A
+`internal/site/assets/third_party/minisearch/minisearch.js`, sem mudança. A
 licença MIT vai ao lado e também para a saída. Dados conferidos em
 2026-10-20:
 

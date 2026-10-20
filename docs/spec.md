@@ -665,7 +665,9 @@ como um documento longo.
 - HTML do conteúdo: saída do goldmark sem `WithUnsafe`; textos da
   configuração passam por `html/template`.
 - Recursos do guidebook (CSS, JS, bibliotecas vendorizadas) embutidos no
-  binário com `go:embed`.
+  binário com `go:embed`. Teste instala o guidebook por `go install` a
+  partir de um módulo de verdade, sem rede. O binário instalado gera o
+  projeto de exemplo ([ADR 0013](adr/0013-third-party-assets.md)).
 - **Determinismo**: mesma entrada, mesmos bytes. Sem data, hora, caminho
   absoluto ou valor aleatório na saída; mapas sempre percorridos em
   ordem; arquivos gravados em ordem. Teste gera duas vezes e compara.
@@ -750,11 +752,15 @@ como um documento longo.
 ## 10. Bibliotecas de navegador vendorizadas
 
 MiniSearch e Mermaid, versões fixas, baixadas uma vez do registro npm
-para `internal/site/assets/vendor/<nome>/`. Cada uma tem:
+para `internal/site/assets/third_party/<nome>/`. Cada uma tem:
 
 - o arquivo distribuído, tal como vem no pacote;
 - o arquivo de licença original ao lado, copiado também para a saída;
-- uma entrada no manifesto `internal/site/assets/vendor/vendor.json`.
+- uma entrada no manifesto `internal/site/assets/third_party/vendor.json`.
+
+O diretório não se chama `vendor`: o zip de módulo do Go, que o
+`go install` usa, descarta os arquivos de subdiretórios de qualquer
+diretório com esse nome ([ADR 0013](adr/0013-third-party-assets.md)).
 
 Campos da entrada no manifesto:
 
@@ -764,13 +770,14 @@ Campos da entrada no manifesto:
 | `source` | URL do tarball no registro npm |
 | `tarball_integrity` | `dist.integrity` do registro, conferido no download |
 | `file` | caminho do arquivo dentro do tarball |
-| `vendored_as` | caminho no repositório, relativo a `vendor/` |
+| `vendored_as` | caminho no repositório, relativo a `third_party/` |
 | `sha256` | SHA-256 do arquivo vendorizado |
 | `license`, `license_file` | licença e arquivo dela |
 | `reviewed_matches` | quantas ocorrências de API de rede foram revisadas à mão |
 
 Testes Go conferem:
 
+- que nenhum caminho dos recursos embutidos tem o segmento `vendor`;
 - o SHA-256 de cada arquivo contra o manifesto;
 - que a licença existe;
 - que a origem é o tarball do registro npm;
