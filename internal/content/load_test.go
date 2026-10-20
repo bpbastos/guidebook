@@ -125,7 +125,7 @@ func TestLinks(t *testing.T) {
 		{"âncora local", "[x](#secao-local)", `<a href="#/tasks/a/secao-local" data-gb="nav">x</a>`},
 		{"externo", "[x](https://exemplo.com/a)", `<a href="https://exemplo.com/a" target="_blank" rel="noopener noreferrer">x</a>`},
 		{"e-mail", "[x](mailto:a@exemplo.com)", `<a href="mailto:a@exemplo.com" target="_blank" rel="noopener noreferrer">x</a>`},
-		{"imagem", "![Tela de pedido](../media/tela.png)", `<img src="media/docs/user/media/tela.png" alt="Tela de pedido">`},
+		{"imagem", "![Tela de pedido](../media/tela.png)", `<img src="media/docs/user/media/tela.png" alt="Tela de pedido" loading="lazy" decoding="async">`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

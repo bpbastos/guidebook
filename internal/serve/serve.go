@@ -26,6 +26,7 @@ import (
 
 	"github.com/bpbastos/guidebook/internal/build"
 	"github.com/bpbastos/guidebook/internal/config"
+	"github.com/bpbastos/guidebook/internal/media"
 )
 
 // csp é a política de conteúdo de toda resposta (spec, seção 14.3; ADR
@@ -83,7 +84,7 @@ func New(configPath, workBase string, log io.Writer) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("não foi possível criar o diretório interno: %v", err)
 	}
-	s := &Server{opts: build.Options{Config: configPath, UserOnly: true}, work: work, log: log}
+	s := &Server{opts: build.Options{Config: configPath, UserOnly: true, Media: media.NewCache()}, work: work, log: log}
 	s.health.Store(&healthState{code: http.StatusServiceUnavailable, Status: "unavailable"})
 	return s, nil
 }
@@ -133,6 +134,8 @@ func (s *Server) Refresh() bool {
 		return true
 	}
 
+	// Só o build bom define o que a mídia atual usa.
+	s.opts.Media.Sweep()
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		s.logf("build %d: não foi possível abrir a saída: %v", s.builds, err)

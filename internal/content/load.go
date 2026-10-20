@@ -312,8 +312,11 @@ func (l *loader) resolve(p *parsed) {
 				report(n, "%s", problem)
 			} else {
 				n.Destination = []byte(src)
-				if s := l.shot(p, n, strings.TrimPrefix(src, "media/"), src, report); s != nil {
+				rel := strings.TrimPrefix(src, "media/")
+				if s := l.shot(p, n, rel, src, report); s != nil {
 					p.shots[n.Parent()] = s
+				} else {
+					l.imageAttributes(n, rel)
 				}
 			}
 		}

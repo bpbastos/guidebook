@@ -8,6 +8,12 @@ guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]
 
 Confere a documentação e grava os guias em `-out`.
 
+O `build` otimiza as imagens PNG de mídia: capturas, imagens das páginas
+e posters. Com até 256 cores, a imagem ganha uma paleta exata, sem
+perda. Com mais cores, ela é reduzida a uma paleta de 256 cores. Se o
+resultado não ficar menor, sai o arquivo original. JPEG, vídeos e o logo
+saem como vieram. Caminho, nome e dimensões não mudam.
+
 ## check
 
 ```sh

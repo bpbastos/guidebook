@@ -3,6 +3,8 @@ package site
 import (
 	"bytes"
 	"encoding/json"
+	"image"
+	"image/png"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -36,7 +38,7 @@ func build(t *testing.T, cfg *config.Config) (string, map[string][]byte) {
 		t.Fatal(problems)
 	}
 	out := t.TempDir()
-	if err := WriteUser(cfg, g, out); err != nil {
+	if err := WriteUser(cfg, g, out, nil); err != nil {
 		t.Fatal(err)
 	}
 	files := map[string][]byte{}
@@ -341,7 +343,7 @@ func buildDeveloper(t *testing.T, cfg *config.Config) map[string][]byte {
 		t.Fatal(problems)
 	}
 	out := t.TempDir()
-	if err := WriteDeveloper(cfg, g, out); err != nil {
+	if err := WriteDeveloper(cfg, g, out, nil); err != nil {
 		t.Fatal(err)
 	}
 	files := map[string][]byte{}
@@ -503,5 +505,43 @@ func TestEmptyReleaseHidden(t *testing.T) {
 	}
 	if dev := buildDeveloper(t, cfg); strings.Contains(string(dev["developer-guide.html"]), `id="/changes"`) {
 		t.Errorf("só com marcos vazios, \"Novidades técnicas\" deveria faltar")
+	}
+}
+
+// TestMediaOptimized: o PNG de mídia sai com paleta, menor e com as
+// mesmas dimensões; o logo e o vídeo saem como vieram (docs/spec.md,
+// seção 9.4).
+func TestMediaOptimized(t *testing.T) {
+	cfg := exampleConfig(t)
+	_, files := build(t, cfg)
+	read := func(rel string) []byte {
+		body, err := os.ReadFile(filepath.Join(cfg.Dir, filepath.FromSlash(rel)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	for _, rel := range []string{"docs/user/media/register-order-1.png", "docs/user/media/videos/register-order.png"} {
+		in, out := read(rel), files["media/"+rel]
+		if len(out) >= len(in) {
+			t.Errorf("%s: %d bytes → %d; esperava menor", rel, len(in), len(out))
+			continue
+		}
+		before, _ := png.Decode(bytes.NewReader(in))
+		after, err := png.Decode(bytes.NewReader(out))
+		if err != nil {
+			t.Fatalf("%s: %v", rel, err)
+		}
+		if _, ok := after.(*image.Paletted); !ok {
+			t.Errorf("%s: saiu %T; esperava PNG com paleta", rel, after)
+		}
+		if before.Bounds() != after.Bounds() {
+			t.Errorf("%s: dimensões %v → %v", rel, before.Bounds(), after.Bounds())
+		}
+	}
+	for _, rel := range []string{"docs/assets/logo.svg", "docs/user/media/videos/register-order.webm"} {
+		if !bytes.Equal(files["media/"+rel], read(rel)) {
+			t.Errorf("%s: deveria sair como veio", rel)
+		}
 	}
 }

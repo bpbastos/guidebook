@@ -10,6 +10,7 @@ import (
 	"github.com/bpbastos/guidebook/internal/config"
 	"github.com/bpbastos/guidebook/internal/content"
 	"github.com/bpbastos/guidebook/internal/diag"
+	"github.com/bpbastos/guidebook/internal/media"
 	"github.com/bpbastos/guidebook/internal/output"
 	"github.com/bpbastos/guidebook/internal/rules"
 	"github.com/bpbastos/guidebook/internal/site"
@@ -29,7 +30,8 @@ type Options struct {
 	Config   string // caminho do guidebook.yaml
 	Guide    string // all, user ou developer
 	Out      string
-	UserOnly bool // só o guia do usuário, sem ler a seção developer (serve)
+	UserOnly bool         // só o guia do usuário, sem ler a seção developer (serve)
+	Media    *media.Cache // cache da otimização de imagens; sem ele, um novo por Run
 }
 
 // Result traz os problemas, ou o erro que impediu o build, e os guias
@@ -81,18 +83,21 @@ func Run(o Options) Result {
 		return Result{Status: OK}
 	}
 
+	if o.Media == nil {
+		o.Media = media.NewCache()
+	}
 	if err := output.Prepare(o.Out); err != nil {
 		return Result{Status: Usage, Err: err}
 	}
 	var r Result
 	if wantUser {
-		if err := site.WriteUser(cfg, userGuide, o.Out); err != nil {
+		if err := site.WriteUser(cfg, userGuide, o.Out, o.Media); err != nil {
 			return Result{Status: Usage, Err: err}
 		}
 		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "user-guide.html"))
 	}
 	if wantDev {
-		if err := site.WriteDeveloper(cfg, devGuide, o.Out); err != nil {
+		if err := site.WriteDeveloper(cfg, devGuide, o.Out, o.Media); err != nil {
 			return Result{Status: Usage, Err: err}
 		}
 		r.Wrote = append(r.Wrote, filepath.Join(o.Out, "developer-guide.html"))

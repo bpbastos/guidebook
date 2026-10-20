@@ -9,6 +9,10 @@ Assim o guia acompanha o sistema sem trabalho à mão.
 Em cada passo que o guia mostra, o e2e grava a captura em
 `docs/user/media/`. Use PNG ou JPEG.
 
+Grave as capturas em PNG, sem perda. O `build` reduz as cores e o
+tamanho de cada uma sem mudar as dimensões. Assim os marcadores
+continuam no lugar.
+
 ## Calcule os marcadores
 
 Para cada elemento que o passo cita, o e2e pega a caixa dele na

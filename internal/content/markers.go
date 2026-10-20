@@ -182,13 +182,28 @@ func (l *loader) shot(p *parsed, img *ast.Image, imageRel, src string, report fu
 	}
 }
 
+// imageAttributes põe no <img> as dimensões, se for PNG ou JPEG, e a
+// carga preguiçosa (docs/spec.md, seção 9.4).
+func (l *loader) imageAttributes(img *ast.Image, rel string) {
+	if f, err := os.Open(l.abs(rel)); err == nil {
+		cfg, format, err := image.DecodeConfig(f)
+		f.Close()
+		if err == nil && (format == "png" || format == "jpeg") {
+			img.SetAttributeString("width", []byte(strconv.Itoa(cfg.Width)))
+			img.SetAttributeString("height", []byte(strconv.Itoa(cfg.Height)))
+		}
+	}
+	img.SetAttributeString("loading", []byte("lazy"))
+	img.SetAttributeString("decoding", []byte("async"))
+}
+
 // renderShot escreve a captura como <figure>: imagem, marcadores (que o
 // JavaScript posiciona a partir de data-x e data-y), visita guiada e a
 // lista acessível dos pontos.
 func (l *loader) renderShot(b *bytes.Buffer, s *shot) {
 	e := html.EscapeString
 	fmt.Fprintf(b, "<figure class=\"gb-shot\" id=\"%s\">\n<div class=\"gb-shot-frame\"><div class=\"gb-shot-zoom\">\n", s.id)
-	fmt.Fprintf(b, "<img src=\"%s\" alt=\"%s\" width=\"%d\" height=\"%d\" aria-describedby=\"%s-points\">\n", e(s.src), e(s.alt), s.width, s.height, s.id)
+	fmt.Fprintf(b, "<img src=\"%s\" alt=\"%s\" width=\"%d\" height=\"%d\" loading=\"lazy\" decoding=\"async\" aria-describedby=\"%s-points\">\n", e(s.src), e(s.alt), s.width, s.height, s.id)
 	for _, m := range s.markers {
 		fmt.Fprintf(b, "<button type=\"button\" class=\"gb-marker\" data-n=\"%d\" data-x=\"%s\" data-y=\"%s\" aria-label=\"%d. %s\" hidden>%d</button>\n",
 			*m.N, strconv.FormatFloat(*m.X, 'f', -1, 64), strconv.FormatFloat(*m.Y, 'f', -1, 64), *m.N, e(strings.TrimSpace(m.Text)), *m.N)
