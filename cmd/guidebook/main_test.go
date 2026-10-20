@@ -605,3 +605,17 @@ func TestVersionAndDateUsage(t *testing.T) {
 		t.Errorf("40 caracteres deveriam passar: código %d\n%s", code, stderr)
 	}
 }
+
+// TestUsageListsOptions: o texto de uso traz as opções de cada
+// subcomando, como a sinopse da spec (seção 2).
+func TestUsageListsOptions(t *testing.T) {
+	_, stdout, _ := runCLI("-h")
+	for _, want := range []string{
+		"guidebook build [-config guidebook.yaml] [-out out] [-guide all|user|developer]\n                  [-product-version <texto>] [-date AAAA-MM-DD]",
+		"guidebook check [-config guidebook.yaml] [-guide all|user|developer] [-no-media]\n                  [-product-version <texto>] [-date AAAA-MM-DD]",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("uso sem %q:\n%s", want, stdout)
+		}
+	}
+}

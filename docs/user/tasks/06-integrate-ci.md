@@ -64,7 +64,10 @@ guides:
         if-no-files-found: error
 ```
 
-Troque `make e2e` pelo comando do e2e do projeto. A versão e a data
+Troque `make e2e` pelo comando do e2e do projeto. Num push de tag, o
+`actions/checkout` traz a própria tag, e a versão sai como ela, por
+exemplo `v1.4.0`. Fora disso, nenhuma tag vem, e a versão sai como o
+SHA curto do commit. A versão e a data
 aparecem no rodapé dos dois guias. A data vem do commit, não do relógio
 da máquina: o mesmo commit gera os mesmos guias. O `check` recebe as
 mesmas opções para informar o mesmo tamanho do `build`. Em outra forja, os

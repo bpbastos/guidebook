@@ -29,6 +29,7 @@ type shot struct {
 	width   int
 	height  int
 	markers []marker
+	labels  []string // texto de cada marcador: o do JSON ou o do item da lista
 }
 
 type markerFile struct {
@@ -43,7 +44,7 @@ type marker struct {
 	N    *int     `json:"n"`
 	X    *float64 `json:"x"`
 	Y    *float64 `json:"y"`
-	Text string   `json:"text"`
+	Text *string  `json:"text"` // opcional: sem ele, vale o item n da lista
 }
 
 const maxMarkerText = 80
@@ -155,9 +156,12 @@ func (l *loader) shot(p *parsed, img *ast.Image, imageRel, src string, report fu
 				bad(f+"."+c.name, "precisa ficar entre 0 e 1 (posição relativa)")
 			}
 		}
-		switch text := strings.TrimSpace(m.Text); {
+		if m.Text == nil {
+			continue
+		}
+		switch text := strings.TrimSpace(*m.Text); {
 		case text == "":
-			bad(f+".text", "obrigatório")
+			bad(f+".text", "não pode ficar vazio; sem a chave, vale o texto do item %d", i+1)
 		case utf8.RuneCountInString(text) > maxMarkerText:
 			bad(f+".text", "use até %d caracteres", maxMarkerText)
 		}
@@ -170,6 +174,18 @@ func (l *loader) shot(p *parsed, img *ast.Image, imageRel, src string, report fu
 		report(img, "a captura tem %d marcadores e a lista seguinte tem %d itens", len(mf.Markers), items)
 		return nil
 	}
+	// Marcador sem text usa o texto puro do item, com os espaços juntados
+	// (docs/spec.md, seção 6.2).
+	var labels []string
+	item := list.FirstChild()
+	for _, m := range mf.Markers {
+		if m.Text != nil {
+			labels = append(labels, strings.TrimSpace(*m.Text))
+		} else {
+			labels = append(labels, strings.Join(strings.Fields(markdown.PlainText(item, p.source)), " "))
+		}
+		item = item.NextSibling()
+	}
 	list.SetAttributeString("data-gb-steps", "")
 	p.shotCount++
 	return &shot{
@@ -179,6 +195,7 @@ func (l *loader) shot(p *parsed, img *ast.Image, imageRel, src string, report fu
 		width:   cfg.Width,
 		height:  cfg.Height,
 		markers: mf.Markers,
+		labels:  labels,
 	}
 }
 
@@ -204,9 +221,9 @@ func (l *loader) renderShot(b *bytes.Buffer, s *shot) {
 	e := html.EscapeString
 	fmt.Fprintf(b, "<figure class=\"gb-shot\" id=\"%s\">\n<div class=\"gb-shot-frame\"><div class=\"gb-shot-zoom\">\n", s.id)
 	fmt.Fprintf(b, "<img src=\"%s\" alt=\"%s\" width=\"%d\" height=\"%d\" loading=\"lazy\" decoding=\"async\" aria-describedby=\"%s-points\">\n", e(s.src), e(s.alt), s.width, s.height, s.id)
-	for _, m := range s.markers {
+	for i, m := range s.markers {
 		fmt.Fprintf(b, "<button type=\"button\" class=\"gb-marker\" data-n=\"%d\" data-x=\"%s\" data-y=\"%s\" aria-label=\"%d. %s\" hidden>%d</button>\n",
-			*m.N, strconv.FormatFloat(*m.X, 'f', -1, 64), strconv.FormatFloat(*m.Y, 'f', -1, 64), *m.N, e(strings.TrimSpace(m.Text)), *m.N)
+			*m.N, strconv.FormatFloat(*m.X, 'f', -1, 64), strconv.FormatFloat(*m.Y, 'f', -1, 64), *m.N, e(s.labels[i]), *m.N)
 	}
 	b.WriteString("</div></div>\n")
 	fmt.Fprintf(b, "<button type=\"button\" class=\"gb-tour\" hidden>%s</button>\n", e(l.c.UIText("guided_tour")))
@@ -215,8 +232,8 @@ func (l *loader) renderShot(b *bytes.Buffer, s *shot) {
 		"<button type=\"button\" class=\"gb-tour-close\">%s</button></div>\n",
 		e(l.c.UIText("previous")), e(l.c.UIText("next")), e(l.c.UIText("close")))
 	fmt.Fprintf(b, "<figcaption><p class=\"gb-shot-points-title\">%s</p>\n<ol class=\"gb-shot-points\" id=\"%s-points\">\n", e(l.c.UIText("screen_points")), s.id)
-	for _, m := range s.markers {
-		fmt.Fprintf(b, "<li>%s</li>\n", e(strings.TrimSpace(m.Text)))
+	for _, label := range s.labels {
+		fmt.Fprintf(b, "<li>%s</li>\n", e(label))
 	}
 	b.WriteString("</ol></figcaption>\n</figure>\n")
 }

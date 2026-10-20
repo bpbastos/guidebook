@@ -15,7 +15,7 @@ Cada página fica numa das quatro pastas de `docs/user/`:
 | `explanation/` | explicação | entender o porquê |
 
 Na raiz de `docs/user/` ficam só `index.md`, `glossary.md` e `media/`.
-Veja o que é [Diátaxis](../glossary.md#diataxis).
+Veja o que é [Diátaxis](../glossary.md#diátaxis).
 
 ## Dê um título e ordene
 
@@ -44,6 +44,13 @@ destino decide o que acontece:
 - depois de navegar, aparece o botão "Voltar para onde eu estava".
 
 Veja os detalhes em [Como o guia funciona](../explanation/01-how-the-guide-works.md).
+
+Para levar a uma seção, acrescente a âncora do título, do mesmo jeito
+que no GitHub: minúsculas, acentos mantidos, pontuação fora e cada
+espaço trocado por hífen. A seção "Configuração — avançada" vira
+`#configuração--avançada`, com dois hífens. A forma do GitLab, com os
+hífens juntados, também funciona. Título repetido na página ganha
+`-1`, `-2`...
 
 ## Explique os bloqueios
 

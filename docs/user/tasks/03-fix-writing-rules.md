@@ -13,7 +13,8 @@ A frase passou do limite de palavras. Quebre a frase em duas ou mais,
 sem cortar informação. Listas ajudam quando há vários passos.
 
 O limite muda em `rules.max_sentence_words`. Código e endereços não
-contam como palavras.
+contam como palavras. Um número com ponto ou vírgula entre os dígitos,
+como `1.234,56`, conta como uma palavra só.
 
 ## Citação proibida
 
@@ -37,7 +38,8 @@ ponha entre crases.
 ## O guidebook não me deixa usar um link
 
 O link aponta para um destino que não existe ou que o guia não aceita.
-Confira o caminho e a âncora.
+Confira o caminho e a âncora. A âncora segue a regra do GitHub e
+mantém os acentos: `#códigos-de-saída`, não `#codigos-de-saida`.
 
 Links externos precisam de `http`, `https` ou `mailto`. Outros
 esquemas, como `javascript:` e `data:`, são recusados.

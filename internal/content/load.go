@@ -190,16 +190,14 @@ func (l *loader) parse(page *Page) *parsed {
 		page: page, source: source, doc: markdown.Parse(source), lines: markdown.NewLines(source),
 		display: display, anchors: map[string]bool{}, blocked: map[string]bool{}, shots: map[ast.Node]*shot{},
 	}
+	var ids anchors
 	ast.Walk(p.doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		h, ok := n.(*ast.Heading)
 		if !ok || !entering {
 			return ast.WalkContinue, nil
 		}
 		text := markdown.PlainText(h, source)
-		anchor := Slug(text)
-		for i := 2; p.anchors[anchor]; i++ {
-			anchor = fmt.Sprintf("%s-%d", Slug(text), i)
-		}
+		anchor := ids.next(text)
 		p.anchors[anchor] = true
 		h.SetAttributeString("id", "/"+page.ID+"/"+anchor)
 		heading := Heading{Level: h.Level, Text: text, Anchor: anchor}
@@ -413,8 +411,12 @@ func (l *loader) link(from *parsed, dest string) (href, kind, problem string) {
 			return href, "external", ""
 		}
 	}
-	if frag != "" && !target.anchors[frag] {
-		return "", "", fmt.Sprintf("âncora %q não existe em %s", "#"+frag, target.page.File)
+	if frag != "" {
+		anchor, problem := fragment(target, frag)
+		if problem != "" {
+			return "", "", problem
+		}
+		frag = anchor
 	}
 
 	href = "#/" + target.page.ID
@@ -479,7 +481,9 @@ var accents = strings.NewReplacer(
 	"ç", "c", "ñ", "n", "ý", "y", "ÿ", "y",
 )
 
-// Slug gera a âncora de um título (docs/spec.md, seção 3.2).
+// Slug gera o nome de uma página do guia do desenvolvedor a partir do
+// nome do arquivo: a regra das âncoras da versão 0.1, sem acentos e com
+// hífens juntados (docs/spec.md, seção 8; ADR 0016).
 func Slug(text string) string {
 	var b strings.Builder
 	dash := false
@@ -498,4 +502,76 @@ func Slug(text string) string {
 		return "secao"
 	}
 	return b.String()
+}
+
+// anchors gera as âncoras dos títulos de uma página pela regra do GitHub
+// (docs/spec.md, seção 3.2; ADR 0016): minúsculas, acentos mantidos,
+// pontuação fora, cada espaço vira "-" e a repetição ganha -1, -2...
+type anchors struct {
+	seen map[string]int
+}
+
+func (a *anchors) next(text string) string {
+	if a.seen == nil {
+		a.seen = map[string]int{}
+	}
+	var b strings.Builder
+	for _, r := range strings.ToLower(text) {
+		switch {
+		case r == ' ':
+			b.WriteByte('-')
+		case r == '-' || r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsMark(r):
+			b.WriteRune(r)
+		}
+	}
+	slug := b.String()
+	if strings.Trim(slug, "-") == "" {
+		slug = "secao"
+	}
+	result := slug
+	for {
+		if _, taken := a.seen[result]; !taken {
+			break
+		}
+		a.seen[slug]++
+		result = fmt.Sprintf("%s-%d", slug, a.seen[slug])
+	}
+	a.seen[result] = 0
+	return result
+}
+
+// collapseHyphens junta hífens repetidos: é a forma do GitLab.
+func collapseHyphens(s string) string {
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	return s
+}
+
+// fragment acha a âncora de target que o trecho do vínculo indica: a
+// igual ou, sem ela, a única que casa na forma do GitLab. Devolve a
+// âncora ou a descrição do problema.
+func fragment(target *parsed, frag string) (string, string) {
+	decoded, err := url.PathUnescape(frag)
+	if err != nil {
+		return "", fmt.Sprintf("trecho inválido no vínculo: %q", "#"+frag)
+	}
+	if target.anchors[decoded] {
+		return decoded, ""
+	}
+	var found []string
+	for a := range target.anchors {
+		if collapseHyphens(a) == decoded {
+			found = append(found, a)
+		}
+	}
+	switch len(found) {
+	case 1:
+		return found[0], ""
+	case 0:
+		return "", fmt.Sprintf("âncora %q não existe em %s", "#"+frag, target.page.File)
+	default:
+		sort.Strings(found)
+		return "", fmt.Sprintf("%q casa com mais de uma âncora em %s (%s); use a âncora exata", "#"+frag, target.page.File, strings.Join(found, ", "))
+	}
 }

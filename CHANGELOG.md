@@ -7,7 +7,20 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Modificado
+
+- Âncoras dos títulos pela regra do GitHub: acentos mantidos,
+  pontuação fora, espaço vira hífen sem juntar e repetição com `-1`,
+  `-2`. O vínculo com trecho aceita também a forma do GitLab e o
+  percent-encoding. Mudança incompatível: vínculo na forma antiga, sem
+  acento, passa a ser recusado pelo `check`.
+- Número com ponto ou vírgula entre os dígitos, como `1.234,56`, conta
+  como uma palavra só no limite de frase.
+
 ### Adicionado
+
+- `markers[].text` opcional: sem ele, o marcador usa o texto do item
+  da lista.
 
 - O `build` otimiza os PNG de mídia: paleta exata até 256 cores e, com
   mais cores, redução para 256 por quantizador próprio. Fica o original

@@ -133,7 +133,7 @@ func TestMarkerProblems(t *testing.T) {
 		{"n fora de ordem", img + threeSteps, strings.Replace(threeMarkers, `"n": 2`, `"n": 3`, 1), mk + ": markers[1].n: esperava 2"},
 		{"x fora da faixa", img + threeSteps, strings.Replace(threeMarkers, `"x": 0.125`, `"x": 1.5`, 1), mk + ": markers[0].x: precisa ficar entre 0 e 1"},
 		{"y ausente", img + threeSteps, strings.Replace(threeMarkers, `"y": 0.2, "text": "Campo Cliente"`, `"text": "Campo Cliente"`, 1), mk + ": markers[0].y: obrigatório"},
-		{"texto vazio", img + threeSteps, strings.Replace(threeMarkers, `"Campo Cliente"`, `""`, 1), mk + ": markers[0].text: obrigatório"},
+		{"texto vazio", img + threeSteps, strings.Replace(threeMarkers, `"Campo Cliente"`, `""`, 1), mk + ": markers[0].text: não pode ficar vazio; sem a chave, vale o texto do item 1"},
 		{"texto longo", img + threeSteps, strings.Replace(threeMarkers, `"Campo Cliente"`, `"`+strings.Repeat("á", 81)+`"`, 1), mk + ": markers[0].text: use até 80 caracteres"},
 		{"chave desconhecida", img + threeSteps, strings.Replace(threeMarkers, `"version": 1,`, `"version": 1, "zoom": 2,`, 1), mk + ": zoom: chave desconhecida"},
 		{"versão", img + threeSteps, strings.Replace(threeMarkers, `"version": 1`, `"version": 2`, 1), mk + ": version: só a versão 1 é aceita"},
@@ -211,6 +211,30 @@ func TestImageDimensions(t *testing.T) {
 		`<img src="media/docs/user/media/foto.jpg" alt="Foto" width="320" height="200" loading="lazy" decoding="async">`,
 		// Só PNG e JPEG levam as dimensões (docs/spec.md, seção 9.4).
 		`<img src="media/docs/user/media/d.gif" alt="Desenho" loading="lazy" decoding="async">`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("HTML sem %q:\n%s", want, html)
+		}
+	}
+}
+
+// TestMarkerTextFromList: sem text, o marcador usa o texto puro do item
+// n da lista, com os espaços juntados (docs/spec.md, seção 6.2).
+func TestMarkerTextFromList(t *testing.T) {
+	noText := strings.Replace(threeMarkers, `, "text": "Botão Salvar"`, "", 1)
+	steps := "1. Escolha o cliente.\n2. Adicione os itens.\n3. Clique em **Salvar**   e\n   confira o `total` [aqui](../glossary.md)."
+	g, problems := shotProject(t, "![Tela](../media/tela.png)\n\n"+steps, map[string]string{
+		"docs/user/media/tela.markers.json": noText,
+		"docs/user/glossary.md":             "# Glossário\n",
+	})
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	html := page(t, g, "tasks/a").HTML
+	for _, want := range []string{
+		`aria-label="3. Clique em Salvar e confira o total aqui."`,
+		`<li>Clique em Salvar e confira o total aqui.</li>`,
+		`aria-label="1. Campo Cliente"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("HTML sem %q:\n%s", want, html)
