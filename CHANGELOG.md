@@ -7,6 +7,16 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Modificado
+
+- O repositório e a imagem `ghcr.io/bpbastos/guidebook` passam a ser
+  públicos. O `go install` funciona direto, sem `GOPRIVATE`.
+
+### Corrigido
+
+- Marco do CHANGELOG sem itens, como um "Não publicado" vazio, não
+  aparece mais em "O que há de novo" nem em "Novidades técnicas".
+
 ## [0.1.0] - 2026-10-20
 
 ### Adicionado

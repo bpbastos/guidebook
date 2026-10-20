@@ -457,3 +457,51 @@ func TestDeveloperDeterministicAndCeiling(t *testing.T) {
 		t.Errorf("guia com %d bytes; o teto é %d (ADR 0010)", total, maxDeveloperGuideBytes)
 	}
 }
+
+// TestEmptyReleaseHidden: marco sem itens não aparece em nenhum dos dois
+// guias; só com marcos vazios, a seção inteira some.
+func TestEmptyReleaseHidden(t *testing.T) {
+	project := func(changelog string) *config.Config {
+		t.Helper()
+		dir := t.TempDir()
+		files := map[string]string{
+			"guidebook.yaml": "version: 1\nproduct:\n  name: P\nuser:\n  dir: docs/user\n" +
+				"developer:\n  sections:\n    changes:\n      sources: [CHANGELOG.md]\n",
+			"docs/user/tasks/a.md": "# A\n",
+			"CHANGELOG.md":         changelog,
+		}
+		for name, body := range files {
+			p := filepath.Join(dir, filepath.FromSlash(name))
+			os.MkdirAll(filepath.Dir(p), 0o755)
+			os.WriteFile(p, []byte(body), 0o644)
+		}
+		cfg, problems := config.Load(filepath.Join(dir, "guidebook.yaml"))
+		if len(problems) > 0 {
+			t.Fatal(problems)
+		}
+		return cfg
+	}
+
+	cfg := project("# Changelog\n\n## [Não publicado]\n\n## [0.2.0] - 2026-10-21\n\n### Adicionado\n\n## [0.1.0] - 2026-10-20\n\n### Adicionado\n\n- Primeira versão.\n")
+	_, files := build(t, cfg)
+	dev := buildDeveloper(t, cfg)
+	for name, html := range map[string]string{"usuário": string(files["user-guide.html"]), "desenvolvedor": string(dev["developer-guide.html"])} {
+		if !strings.Contains(html, "<h2>0.1.0 ") {
+			t.Errorf("guia do %s: o marco com itens deveria aparecer", name)
+		}
+		for _, empty := range []string{"<h2>Não publicado", "<h2>0.2.0"} {
+			if strings.Contains(html, empty) {
+				t.Errorf("guia do %s: marco sem itens não deveria aparecer: %s", name, empty)
+			}
+		}
+	}
+
+	cfg = project("# Changelog\n\n## [Não publicado]\n\n## [0.1.0] - 2026-10-20\n\n### Adicionado\n")
+	_, files = build(t, cfg)
+	if strings.Contains(string(files["user-guide.html"]), `id="/whats-new"`) {
+		t.Errorf("só com marcos vazios, \"O que há de novo\" deveria faltar")
+	}
+	if dev := buildDeveloper(t, cfg); strings.Contains(string(dev["developer-guide.html"]), `id="/changes"`) {
+		t.Errorf("só com marcos vazios, \"Novidades técnicas\" deveria faltar")
+	}
+}

@@ -155,14 +155,19 @@ func (v *guideView) addPage(p *content.Page) {
 	v.Articles = append(v.Articles, article{ID: p.ID, Kind: string(p.Kind), HTML: template.HTML(p.HTML), HasVideo: p.Video != nil})
 }
 
+// setReleases monta os marcos; categoria e marco sem itens ficam de fora.
 func (v *guideView) setReleases(title string, releases []changelog.Release) {
 	v.ReleasesTitle = title
 	for _, r := range releases {
 		rv := releaseView{Version: r.Version, Date: brazilianDate(r.Date)}
 		for _, gr := range r.Groups {
-			rv.Groups = append(rv.Groups, groupView{Label: gr.Label, HTML: template.HTML(gr.HTML)})
+			if strings.TrimSpace(gr.HTML) != "" {
+				rv.Groups = append(rv.Groups, groupView{Label: gr.Label, HTML: template.HTML(gr.HTML)})
+			}
 		}
-		v.Releases = append(v.Releases, rv)
+		if len(rv.Groups) > 0 {
+			v.Releases = append(v.Releases, rv)
+		}
 	}
 }
 

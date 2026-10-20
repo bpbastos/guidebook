@@ -187,6 +187,8 @@ aceitos em inglês (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`,
   `[Unreleased]`/`[Não publicado]`.
 - Guia do desenvolvedor ("Novidades técnicas"): lê as fontes da seção
   `changes`; mostra também o marco não publicado.
+- Marco sem itens não aparece em nenhum dos dois guias; categoria sem
+  itens também não. Sem nenhum marco com itens, a seção inteira some.
 - Arquivo fora do formato (marco sem data, categoria desconhecida) é
   erro de conteúdo com `arquivo:linha`.
 - O CHANGELOG não é página do guia: link relativo nele é erro. Links

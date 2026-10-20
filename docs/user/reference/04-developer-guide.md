@@ -37,7 +37,7 @@ developer:
 | `development` | Como manter e evoluir | as fontes em sequência |
 | `operations` | Operação | as fontes em sequência |
 | `out_of_scope` | Fora da versão | as fontes em sequência |
-| `changes` | Novidades técnicas | os marcos do CHANGELOG, com o não publicado |
+| `changes` | Novidades técnicas | os marcos do CHANGELOG com itens, inclusive o não publicado |
 
 Seção sem `sources` não aparece.
 
