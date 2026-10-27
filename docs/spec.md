@@ -1019,6 +1019,7 @@ Nunca CDN. A versão do MiniSearch está no
 | 20 | `feat/task-link-dialog` | vínculo para tarefa ou tutorial abre em diálogo, com o botão `open_full_page`; sai na v0.3.0 |
 | — | `chore/release-0.3.0` | marco 0.3.0 no CHANGELOG |
 | 21 | `fix/glossary-link-dialog` | vínculo para o glossário inteiro abre em diálogo, fora de `index.md`; sai na v0.3.1 |
+| — | `chore/release-0.3.1` | marco 0.3.1 no CHANGELOG |
 
 A partir da fase 4, toda fase que muda comportamento atualiza também a
 página correspondente dos guias do guidebook (seção 13), no mesmo
@@ -1246,7 +1247,7 @@ Exemplo de serviço no compose do projeto:
 ```yaml
 services:
   guidebook:
-    image: ghcr.io/bpbastos/guidebook:v0.3.0
+    image: ghcr.io/bpbastos/guidebook:v0.3.1
     read_only: true
     tmpfs:
       - /tmp
