@@ -7,7 +7,7 @@ projetos e abre sem servidor e sem internet.
 Para instalar, com o Go 1.27.2 ou mais novo:
 
 ```sh
-go install github.com/bpbastos/guidebook/cmd/guidebook@v0.3.0
+go install github.com/bpbastos/guidebook/cmd/guidebook@v0.3.1
 ```
 
 O próprio guidebook se documenta assim. Para gerar e abrir os guias

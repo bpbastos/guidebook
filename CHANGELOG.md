@@ -7,6 +7,8 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+## [0.3.1] - 2026-10-27
+
 ### Corrigido
 
 - Vínculo do guia do usuário para o glossário inteiro, sem termo, abre
