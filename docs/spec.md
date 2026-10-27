@@ -250,6 +250,7 @@ No guia do usuário, o tipo do destino decide o comportamento:
 | Destino | Comportamento |
 |---|---|
 | `glossary.md#termo` | abre o termo em `<dialog>`, sem sair do slide ou da posição de leitura |
+| `glossary.md`, sem âncora | abre o glossário inteiro em `<dialog>`. Em `index.md`, navega direto ([ADR 0020](adr/0020-glossary-link-dialog.md)) |
 | página de `reference/` ou `explanation/` ("veja também") | abre a página em `<dialog>` |
 | título "O sistema não me deixa..." de qualquer página ("bloqueio") | abre aquela seção em `<dialog>` |
 | página ou âncora de `tutorials/` ou `tasks/` | abre em `<dialog>`: com âncora, aquela seção; sem âncora, o título e o texto antes do primeiro `## ` (sem texto, também a primeira seção). O botão `open_full_page` navega até o destino. Em `index.md`, navega direto, como o menu ([ADR 0019](adr/0019-task-link-dialog.md)) |
@@ -265,7 +266,7 @@ imagem é copiada para `media/`, com o caminho relativo ao
 
 Navegam direto, sem diálogo: o menu, "Comece por aqui", o índice "O
 sistema não me deixa..." e "O que há de novo". Também navegam os
-vínculos de `index.md`, o vínculo para a própria página e os do guia do
+vínculos de `index.md` (para tarefa, tutorial e o glossário inteiro), o vínculo para a própria página e os do guia do
 desenvolvedor. No diálogo, vínculo para outra tarefa troca o conteúdo
 do mesmo diálogo, sem pilha; ao fechar, o foco volta ao link da
 página. A cópia no diálogo esconde o botão da visita guiada e mantém a
@@ -1017,6 +1018,7 @@ Nunca CDN. A versão do MiniSearch está no
 | — | `chore/release-0.2.0` | marco 0.2.0 no CHANGELOG |
 | 20 | `feat/task-link-dialog` | vínculo para tarefa ou tutorial abre em diálogo, com o botão `open_full_page`; sai na v0.3.0 |
 | — | `chore/release-0.3.0` | marco 0.3.0 no CHANGELOG |
+| 21 | `fix/glossary-link-dialog` | vínculo para o glossário inteiro abre em diálogo, fora de `index.md`; sai na v0.3.1 |
 
 A partir da fase 4, toda fase que muda comportamento atualiza também a
 página correspondente dos guias do guidebook (seção 13), no mesmo

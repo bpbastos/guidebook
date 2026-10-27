@@ -192,7 +192,7 @@ func linkProject(t *testing.T, body string) (*Guide, []string) {
 		"docs/user/tasks/b.md":      "# B\n\n## Conferir\n\nOlhe.\n\n## O sistema não me deixa salvar\n\nPorque sim.\n",
 		"docs/user/reference/r.md":  "# R\n",
 		"docs/user/tutorials/t.md":  "# T\n\n## Primeiro passo\n\nTexto.\n",
-		"docs/user/index.md":        "# Início\n\n[b](tasks/b.md), [passo](tutorials/t.md#primeiro-passo) e [r](reference/r.md).\n",
+		"docs/user/index.md":        "# Início\n\n[b](tasks/b.md), [passo](tutorials/t.md#primeiro-passo) e [r](reference/r.md) e [g](glossary.md).\n",
 		"docs/user/glossary.md":     "# Glossário\n\n## Pedido\n\nLista de itens.\n",
 		"docs/user/media/tela.png":  "png",
 		"docs/user/media/notas.txt": "x",
@@ -215,7 +215,7 @@ func TestLinks(t *testing.T) {
 		{"seção de tutorial em diálogo", "[x](../tutorials/t.md#primeiro-passo)", `<a href="#/tutorials/t/primeiro-passo" data-gb="page">x</a>`},
 		{"referência em diálogo", "[x](../reference/r.md)", `<a href="#/reference/r" data-gb="dialog">x</a>`},
 		{"termo do glossário em diálogo", "[x](../glossary.md#pedido)", `<a href="#/glossary/pedido" data-gb="dialog">x</a>`},
-		{"glossário sem âncora navega", "[x](../glossary.md)", `<a href="#/glossary" data-gb="nav">x</a>`},
+		{"glossário inteiro em diálogo", "[x](../glossary.md)", `<a href="#/glossary" data-gb="dialog">x</a>`},
 		{"bloqueio em diálogo", "[x](b.md#o-sistema-não-me-deixa-salvar)", `<a href="#/tasks/b/o-sistema-n%C3%A3o-me-deixa-salvar" data-gb="dialog">x</a>`},
 		{"âncora local", "[x](#seção-local)", `<a href="#/tasks/a/se%C3%A7%C3%A3o-local" data-gb="nav">x</a>`},
 		{"externo", "[x](https://exemplo.com/a)", `<a href="https://exemplo.com/a" target="_blank" rel="noopener noreferrer">x</a>`},
@@ -236,7 +236,8 @@ func TestLinks(t *testing.T) {
 }
 
 // TestIndexLinksNavigate: a página inicial é porta de entrada, como o
-// menu; os vínculos dela para tarefa e tutorial navegam (ADR 0019).
+// menu; os vínculos dela para tarefa, tutorial e o glossário inteiro
+// navegam (ADR 0019).
 func TestIndexLinksNavigate(t *testing.T) {
 	g, problems := linkProject(t, "Texto.")
 	if len(problems) > 0 {
@@ -247,6 +248,7 @@ func TestIndexLinksNavigate(t *testing.T) {
 		`<a href="#/tasks/b" data-gb="nav">b</a>`,
 		`<a href="#/tutorials/t/primeiro-passo" data-gb="nav">passo</a>`,
 		`<a href="#/reference/r" data-gb="dialog">r</a>`,
+		`<a href="#/glossary" data-gb="nav">g</a>`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("HTML de index sem %q:\n%s", want, html)

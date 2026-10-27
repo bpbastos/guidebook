@@ -433,7 +433,11 @@ func (l *loader) link(from *parsed, dest string) (href, kind, problem string) {
 		return href, linkDialog, ""
 	// A página inicial é porta de entrada, como o menu, e o vínculo para
 	// a própria página só rola até a seção.
-	case (k == KindTask || k == KindTutorial) && from.page.Kind != KindIndex && target != from:
+	case from.page.Kind == KindIndex || target == from:
+		return href, linkNav, ""
+	case k == KindGlossary:
+		return href, linkDialog, ""
+	case k == KindTask || k == KindTutorial:
 		return href, linkPage, ""
 	default:
 		return href, linkNav, ""

@@ -43,8 +43,8 @@ destino decide o que acontece:
 - na janela de tarefa ou tutorial, o botão "Abrir a página inteira"
   navega até lá;
 - depois de navegar, aparece o botão "Voltar para onde eu estava";
-- na página inicial (`index.md`), link para tarefa ou tutorial navega
-  direto, como o menu.
+- na página inicial (`index.md`), link para tarefa, tutorial ou o
+  glossário inteiro navega direto, como o menu.
 
 Veja os detalhes em [Como o guia funciona](../explanation/01-how-the-guide-works.md).
 
