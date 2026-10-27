@@ -7,6 +7,13 @@ e o projeto adota o [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Corrigido
+
+- Vínculo do guia do usuário para o glossário inteiro, sem termo, abre
+  em diálogo, como o vínculo para um termo. Antes trocava de página e,
+  no modo apresentação, a apresentação inteira. Os vínculos de
+  `index.md` continuam navegando.
+
 ## [0.3.0] - 2026-10-20
 
 ### Adicionado
